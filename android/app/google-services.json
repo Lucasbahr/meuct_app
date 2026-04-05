@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "997643734902",
+    "project_id": "meuct-app",
+    "storage_bucket": "meuct-app.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:997643734902:android:289b43c63192aba74ab457",
+        "android_client_info": {
+          "package_name": "com.suaacademia.genesismma"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAKSbeYdGyRlu3EBJt97GgF_fDU4yNToCo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

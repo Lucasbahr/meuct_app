@@ -1,17 +1,52 @@
-# meuct_app
+# 🥊 Genesis MMA
 
-A new Flutter project.
+Aplicação mobile desenvolvida em **Flutter** para a academia **Genesis MMA**.
 
-## Getting Started
+O app contempla funcionalidades para **alunos e administradores**, com foco em gestão de presença, engajamento e acompanhamento de desempenho.
 
-This project is a starting point for a Flutter application.
+---
 
-A few resources to get you started if this is your first Flutter project:
+# 🚀 Funcionalidades
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+## 👤 Alunos
+- Perfil do aluno
+- Check-in na academia
+- Feed de conteúdos
+- Visualização de atletas
+- Autenticação segura (JWT)
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## 🛠️ Administradores
+- Listagem de alunos
+- Check-in manual
+- Ranking de alunos
+- Gestão de presença
+
+---
+
+# 🧱 Stack utilizada
+
+- **Flutter** (UI mobile)
+- **Dart**
+- **REST API**
+- **JWT Authentication**
+- **Secure Storage** (`flutter_secure_storage`)
+- **CI/CD com GitHub Actions**
+- **Distribuição via Firebase App Distribution**
+
+---
+
+# ⚙️ Requisitos
+
+- Flutter (canal `stable`)
+- Dart (compatível com `pubspec.yaml`)
+- JDK **17**
+- Android Studio / SDK Android
+- Xcode (opcional - iOS)
+
+---
+
+# ▶️ Como rodar o projeto
+
+```bash
+flutter pub get
+flutter run
