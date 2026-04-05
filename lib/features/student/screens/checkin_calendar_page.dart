@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../widgets/loading_overlay.dart';
 import '../services/checkin_service.dart';
 
 class CheckinCalendarPage extends StatefulWidget {
@@ -129,9 +130,12 @@ class _CheckinCalendarPageState extends State<CheckinCalendarPage> {
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
-          : RefreshIndicator(
-              onRefresh: _refresh,
-              child: ListView(
+          : LoadingOverlay(
+              visible: _isCheckingIn,
+              message: 'Registrando check-in...',
+              child: RefreshIndicator(
+                onRefresh: _refresh,
+                child: ListView(
                 padding: const EdgeInsets.all(16),
                 children: [
                   if (_summary != null)
@@ -294,6 +298,7 @@ class _CheckinCalendarPageState extends State<CheckinCalendarPage> {
                     ),
                   ),
                 ],
+              ),
               ),
             ),
     );

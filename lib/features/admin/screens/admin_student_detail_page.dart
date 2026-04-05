@@ -1,7 +1,9 @@
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import '../../../core/graduacao/bjj_graduacao.dart';
 import '../services/admin_service.dart';
 import '../widgets/register_student_attendance.dart';
+import '../../../widgets/loading_overlay.dart';
 import 'admin_edit_student_page.dart';
 import 'admin_athlete_detail_page.dart';
 
@@ -23,6 +25,7 @@ class AdminStudentDetailPage extends StatefulWidget {
 class _AdminStudentDetailPageState extends State<AdminStudentDetailPage> {
   Uint8List? _photoBytes;
   bool _loadingPhoto = true;
+  bool _registeringPresence = false;
 
   int? get _studentId {
     final id = widget.student['id'];
@@ -80,9 +83,12 @@ class _AdminStudentDetailPageState extends State<AdminStudentDetailPage> {
           ),
         ],
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
+      body: LoadingOverlay(
+        visible: _registeringPresence,
+        message: 'Registrando presença...',
+        child: ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
           Center(
             child: Column(
               children: [
@@ -121,6 +127,9 @@ class _AdminStudentDetailPageState extends State<AdminStudentDetailPage> {
                 context: context,
                 service: widget.service,
                 student: widget.student,
+                onBusy: (busy) {
+                  if (mounted) setState(() => _registeringPresence = busy);
+                },
               ),
               icon: const Icon(Icons.how_to_reg_outlined),
               label: const Text('Registrar presença (hoje)'),
@@ -142,7 +151,12 @@ class _AdminStudentDetailPageState extends State<AdminStudentDetailPage> {
           _card('Email', _t('email')),
           _card('Telefone', _t('telefone')),
           _card('Modalidade', _t('modalidade')),
-          _card('Graduação', _t('graduacao')),
+          _card(
+            'Graduação',
+            formatGraduacaoDisplay(
+              (widget.student['graduacao'] ?? '').toString(),
+            ),
+          ),
           _card('Status', _t('status')),
           _card('Endereço', _t('endereco')),
           _card('Data de nascimento', _t('data_nascimento')),
@@ -166,6 +180,7 @@ class _AdminStudentDetailPageState extends State<AdminStudentDetailPage> {
             ),
           ],
         ],
+        ),
       ),
     );
   }

@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../../../core/graduacao/bjj_graduacao.dart';
 import '../../../core/auth/session_service.dart';
 import '../../../core/storage/token_storage.dart';
 import '../../../widgets/cached_auth_network_image.dart';
+import '../../../widgets/loading_overlay.dart';
 import '../../feed/services/feed_service.dart';
 import '../services/student_service.dart';
 
@@ -24,6 +26,9 @@ class _FeedPageState extends State<FeedPage> {
   Map<String, dynamic>? _me;
   int? _myTokenUserId;
   Map<String, String> _nameByUserId = {};
+  /// Publicar, editar, excluir post (API + refresh).
+  String? _blockingMessage;
+  int? _pendingLikePostId;
 
   @override
   void initState() {
@@ -283,10 +288,12 @@ class _FeedPageState extends State<FeedPage> {
   Future<void> _toggleLike(Map<String, dynamic> item) async {
     final id = item['id'];
     if (id is! int) return;
+    if (_pendingLikePostId != null) return;
     final likedBefore = item['liked_by_me'] == true;
     final countBefore = (item['like_count'] as num?)?.toInt() ?? 0;
 
     setState(() {
+      _pendingLikePostId = id;
       item['liked_by_me'] = !likedBefore;
       item['like_count'] = likedBefore ? countBefore - 1 : countBefore + 1;
     });
@@ -308,6 +315,8 @@ class _FeedPageState extends State<FeedPage> {
           content: Text(e.toString().replaceFirst('Exception: ', '')),
         ),
       );
+    } finally {
+      if (mounted) setState(() => _pendingLikePostId = null);
     }
   }
 
@@ -350,6 +359,7 @@ class _FeedPageState extends State<FeedPage> {
       ),
     );
     if (ok != true || !mounted) return;
+    setState(() => _blockingMessage = 'Excluindo post...');
     try {
       await _feedService.deleteItem(pid);
       if (!mounted) return;
@@ -364,6 +374,8 @@ class _FeedPageState extends State<FeedPage> {
           content: Text(e.toString().replaceFirst('Exception: ', '')),
         ),
       );
+    } finally {
+      if (mounted) setState(() => _blockingMessage = null);
     }
   }
 
@@ -399,8 +411,8 @@ class _FeedPageState extends State<FeedPage> {
         TextEditingController(text: (existing?["local"] ?? "").toString());
     final modalidadeController =
         TextEditingController(text: (existing?["modalidade"] ?? "").toString());
-    final graduacaoController =
-        TextEditingController(text: (existing?["graduacao"] ?? "").toString());
+    String graduacaoPost =
+        graduacaoSelecionavelInicial(existing?["graduacao"]?.toString());
     final eventoDataController =
         TextEditingController(text: (existing?["evento_data"] ?? "").toString());
     final linkImagemController = TextEditingController(
@@ -502,10 +514,28 @@ class _FeedPageState extends State<FeedPage> {
                         controller: modalidadeController,
                         decoration: const InputDecoration(labelText: "Modalidade"),
                       ),
-                      TextField(
-                        controller: graduacaoController,
-                        decoration: const InputDecoration(labelText: "Graduação"),
-                      ),
+                      if (tipo == "graduacao") ...[
+                        DropdownButtonFormField<String>(
+                          value: alignGraduacaoDropdownValue(
+                            graduacaoPost,
+                            graduacoesDropdownItens(valorAtual: graduacaoPost),
+                          ),
+                          decoration:
+                              const InputDecoration(labelText: "Graduação"),
+                          items: graduacoesDropdownItens(valorAtual: graduacaoPost)
+                              .map(
+                                (g) => DropdownMenuItem<String>(
+                                  value: g,
+                                  child: Text(formatGraduacaoDisplay(g)),
+                                ),
+                              )
+                              .toList(),
+                          onChanged: (v) => setLocal(
+                            () => graduacaoPost =
+                                v ?? graduacaoInicialAluno,
+                          ),
+                        ),
+                      ],
                       TextField(
                         controller: linkImagemController,
                         keyboardType: TextInputType.url,
@@ -569,6 +599,11 @@ class _FeedPageState extends State<FeedPage> {
 
     if (saved != true) return;
 
+    setState(() {
+      _blockingMessage =
+          existing == null ? 'Publicando...' : 'Atualizando post...';
+    });
+
     final payload = <String, dynamic>{
       "tipo": tipo,
       "titulo": titleController.text.trim(),
@@ -578,8 +613,9 @@ class _FeedPageState extends State<FeedPage> {
       if (localController.text.trim().isNotEmpty) "local": localController.text.trim(),
       if (modalidadeController.text.trim().isNotEmpty)
         "modalidade": modalidadeController.text.trim(),
-      if (graduacaoController.text.trim().isNotEmpty)
-        "graduacao": graduacaoController.text.trim(),
+      if (tipo == "graduacao")
+        "graduacao":
+            canonicalGraduacaoBjj(graduacaoPost) ?? graduacaoPost.trim(),
       if (linkImagemController.text.trim().isNotEmpty)
         "imagem_link": linkImagemController.text.trim(),
     };
@@ -607,6 +643,8 @@ class _FeedPageState extends State<FeedPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(e.toString().replaceFirst("Exception: ", ""))),
       );
+    } finally {
+      if (mounted) setState(() => _blockingMessage = null);
     }
   }
 
@@ -622,37 +660,41 @@ class _FeedPageState extends State<FeedPage> {
               child: const Icon(Icons.add),
             )
           : null,
-      body: FutureBuilder<List<Map<String, dynamic>>>(
-        future: _feedFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (snapshot.hasError) {
-            return Center(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Text(
-                  snapshot.error.toString().replaceFirst("Exception: ", ""),
-                  textAlign: TextAlign.center,
+      body: LoadingOverlay(
+        visible: _blockingMessage != null,
+        message: _blockingMessage ?? '',
+        child: FutureBuilder<List<Map<String, dynamic>>>(
+          future: _feedFuture,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            if (snapshot.hasError) {
+              return Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Text(
+                    snapshot.error.toString().replaceFirst("Exception: ", ""),
+                    textAlign: TextAlign.center,
+                  ),
                 ),
-              ),
-            );
-          }
+              );
+            }
 
-          final items = snapshot.data ?? [];
-          if (items.isEmpty) {
-            return const Center(child: Text("Sem publicações."));
-          }
+            final items = snapshot.data ?? [];
+            if (items.isEmpty) {
+              return const Center(child: Text("Sem publicações."));
+            }
 
-          return RefreshIndicator(
-            onRefresh: _refresh,
-            child: ListView.separated(
+            return RefreshIndicator(
+              onRefresh: _refresh,
+              child: ListView.separated(
               padding: const EdgeInsets.all(16),
               itemCount: items.length,
               separatorBuilder: (_, __) => const SizedBox(height: 12),
               itemBuilder: (context, index) {
                 final item = items[index];
+                final postId = item["id"];
                 final title = (item["titulo"] ?? "").toString();
                 final type = (item["tipo"] ?? "").toString();
                 final desc = (item["descricao"] ?? "").toString();
@@ -764,11 +806,24 @@ class _FeedPageState extends State<FeedPage> {
                         children: [
                           IconButton(
                             tooltip: liked ? 'Descurtir' : 'Curtir',
-                            onPressed: () => _toggleLike(item),
-                            icon: Icon(
-                              liked ? Icons.favorite : Icons.favorite_border,
-                              color: liked ? Colors.red : null,
-                            ),
+                            onPressed: _pendingLikePostId != null
+                                ? null
+                                : () => _toggleLike(item),
+                            icon: postId is int &&
+                                    _pendingLikePostId == postId
+                                ? const SizedBox(
+                                    width: 24,
+                                    height: 24,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                    ),
+                                  )
+                                : Icon(
+                                    liked
+                                        ? Icons.favorite
+                                        : Icons.favorite_border,
+                                    color: liked ? Colors.red : null,
+                                  ),
                           ),
                           Padding(
                             padding: const EdgeInsets.symmetric(
@@ -797,7 +852,8 @@ class _FeedPageState extends State<FeedPage> {
               },
             ),
           );
-        },
+          },
+        ),
       ),
     );
   }
@@ -826,6 +882,7 @@ class _FeedCommentsSheetState extends State<_FeedCommentsSheet> {
   late Future<List<Map<String, dynamic>>> _future;
   final _controller = TextEditingController();
   bool _sending = false;
+  String? _sheetOverlayMsg;
 
   @override
   void initState() {
@@ -852,7 +909,10 @@ class _FeedCommentsSheetState extends State<_FeedCommentsSheet> {
   Future<void> _sendComment() async {
     final txt = _controller.text.trim();
     if (txt.isEmpty || _sending) return;
-    setState(() => _sending = true);
+    setState(() {
+      _sending = true;
+      _sheetOverlayMsg = 'Enviando comentário...';
+    });
     try {
       await widget.feedService.addComment(widget.itemId, txt);
       if (!mounted) return;
@@ -865,7 +925,12 @@ class _FeedCommentsSheetState extends State<_FeedCommentsSheet> {
         SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
       );
     } finally {
-      if (mounted) setState(() => _sending = false);
+      if (mounted) {
+        setState(() {
+          _sending = false;
+          _sheetOverlayMsg = null;
+        });
+      }
     }
   }
 
@@ -890,6 +955,7 @@ class _FeedCommentsSheetState extends State<_FeedCommentsSheet> {
       ),
     );
     if (ok != true || !mounted) return;
+    setState(() => _sheetOverlayMsg = 'Removendo comentário...');
     try {
       await widget.feedService.deleteComment(widget.itemId, cid);
       if (!mounted) return;
@@ -903,6 +969,8 @@ class _FeedCommentsSheetState extends State<_FeedCommentsSheet> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
       );
+    } finally {
+      if (mounted) setState(() => _sheetOverlayMsg = null);
     }
   }
 
@@ -910,7 +978,10 @@ class _FeedCommentsSheetState extends State<_FeedCommentsSheet> {
   Widget build(BuildContext context) {
     return SizedBox(
       height: 420,
-      child: Column(
+      child: LoadingOverlay(
+        visible: _sheetOverlayMsg != null,
+        message: _sheetOverlayMsg ?? '',
+        child: Column(
         children: [
           const SizedBox(height: 10),
           const Text(
@@ -990,6 +1061,7 @@ class _FeedCommentsSheetState extends State<_FeedCommentsSheet> {
             ),
           ),
         ],
+      ),
       ),
     );
   }

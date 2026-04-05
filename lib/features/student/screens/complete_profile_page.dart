@@ -98,38 +98,85 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
       appBar: AppBar(title: const Text("Completar perfil")),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
-          : Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (_error != null)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 12),
-                      child: Text(
-                        _error!,
-                        style: const TextStyle(color: Colors.redAccent),
+          : Stack(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (_error != null)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: Text(
+                            _error!,
+                            style: const TextStyle(color: Colors.redAccent),
+                          ),
+                        ),
+                      const Text(
+                        "Para entrar na tela inicial, precisamos do seu nome.",
+                        style: TextStyle(color: Colors.white70),
+                      ),
+                      const SizedBox(height: 16),
+                      TextField(
+                        controller: _nomeController,
+                        decoration: const InputDecoration(labelText: "Nome"),
+                      ),
+                      const SizedBox(height: 20),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          onPressed: _isSaving ? null : _save,
+                          child: _isSaving
+                              ? const Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    SizedBox(
+                                      width: 20,
+                                      height: 20,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                    SizedBox(width: 12),
+                                    Text("Salvando..."),
+                                  ],
+                                )
+                              : const Text("Salvar"),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                if (_isSaving)
+                  Positioned.fill(
+                    child: AbsorbPointer(
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          color: Colors.black.withValues(alpha: 0.45),
+                        ),
+                        child: const Center(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              CircularProgressIndicator(),
+                              SizedBox(height: 16),
+                              Text(
+                                "Salvando...",
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                       ),
                     ),
-                  const Text(
-                    "Para entrar na tela inicial, precisamos do seu nome.",
-                    style: TextStyle(color: Colors.white70),
                   ),
-                  const SizedBox(height: 16),
-                  TextField(
-                    controller: _nomeController,
-                    decoration: const InputDecoration(labelText: "Nome"),
-                  ),
-                  const SizedBox(height: 20),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: _isSaving ? null : _save,
-                      child: Text(_isSaving ? "Salvando..." : "Salvar"),
-                    ),
-                  ),
-                ],
-              ),
+              ],
             ),
     );
   }
