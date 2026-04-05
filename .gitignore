@@ -106,3 +106,6 @@ app.*.map.json
 firebase-debug.log
 firestore-debug.log
 ui-debug.log
+
+# APK servido pelo Hosting (não versionar binários grandes)
+public/downloads/*.apk
