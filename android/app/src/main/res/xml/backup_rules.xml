@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Evita restaurar prefs criptografadas do flutter_secure_storage (causa InvalidKeyException e falha de login/API no APK). -->
+<full-backup-content>
+    <exclude domain="sharedpref" path="FlutterSecureStorage"/>
+    <exclude domain="sharedpref" path="FlutterSecureKeyStorage"/>
+</full-backup-content>
