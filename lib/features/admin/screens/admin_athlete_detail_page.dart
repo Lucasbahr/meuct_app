@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../../../core/graduacao/bjj_graduacao.dart';
 
 class AdminAthleteDetailPage extends StatelessWidget {
   final Map<String, dynamic> athlete;
@@ -42,9 +43,8 @@ Data de nascimento: ${_formatDate(birth)}
 Idade: ${age?.toString() ?? "-"} anos
 Email: ${athlete["email"] ?? "-"}
 Telefone: ${athlete["telefone"] ?? "-"}
-Endereco: ${athlete["endereco"] ?? "-"}
 Modalidade: ${athlete["modalidade"] ?? "-"}
-Graduacao: ${athlete["graduacao"] ?? "-"}
+Graduacao: ${formatGraduacaoDisplay((athlete["graduacao"] ?? "").toString())}
 Status: ${athlete["status"] ?? "-"}
 Atleta: ${(athlete["e_atleta"] ?? false) == true ? "SIM" : "NAO"}
 Cartel MMA: ${athlete["cartel_mma"] ?? "-"}
@@ -126,7 +126,10 @@ Ultima luta: ${athlete["ultima_luta_em"] ?? "-"} (${athlete["ultima_luta_modalid
           _item("Telefone", (athlete["telefone"] ?? "-").toString()),
           _item("Endereco", (athlete["endereco"] ?? "-").toString()),
           _item("Modalidade", (athlete["modalidade"] ?? "-").toString()),
-          _item("Graduacao", (athlete["graduacao"] ?? "-").toString()),
+          _item(
+            "Graduacao",
+            formatGraduacaoDisplay((athlete["graduacao"] ?? "").toString()),
+          ),
           _item("Status", (athlete["status"] ?? "-").toString()),
           _item(
             "Atleta",

@@ -47,10 +47,13 @@ jobs:
           echo "BUILD_NUMBER=$BUILD_NUMBER" >> $GITHUB_ENV
 
       - name: Build APK (release)
+        env:
+          API_BASE_URL: https://meuct-api-hml-301033312521.us-central1.run.app
         run: |
           flutter build apk --release \
             --build-name="$VERSION_NAME" \
-            --build-number="$BUILD_NUMBER"
+            --build-number="$BUILD_NUMBER" \
+            --dart-define=API_BASE_URL="$API_BASE_URL"
 
       - name: Preparar artefato para Release
         run: |

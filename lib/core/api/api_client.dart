@@ -2,8 +2,12 @@ import 'package:dio/dio.dart';
 import '../storage/token_storage.dart';
 
 class ApiClient {
-  static const String baseUrl =
-      "https://meuct-api-hml-301033312521.us-central1.run.app";
+  /// Build: opcional `--dart-define=API_BASE_URL=https://seu-host` (CI / produção).
+  static const String baseUrl = String.fromEnvironment(
+    'API_BASE_URL',
+    defaultValue:
+        'https://meuct-api-hml-301033312521.us-central1.run.app',
+  );
   final Dio dio;
 
   ApiClient()

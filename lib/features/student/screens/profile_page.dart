@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:typed_data';
+import '../../../core/graduacao/bjj_graduacao.dart';
 import '../../../widgets/br_address_editor.dart';
 import '../services/student_service.dart';
 import '../services/checkin_service.dart';
@@ -19,6 +20,7 @@ class _ProfilePageState extends State<ProfilePage> {
   int? _diasTreinados;
   bool _isLoading = true;
   bool _isUploadingPhoto = false;
+  bool _isSavingProfile = false;
   String? _error;
   bool _isEditing = false;
   Uint8List? _photoBytes;
@@ -131,13 +133,38 @@ class _ProfilePageState extends State<ProfilePage> {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
   }
 
+  String _enderecoExibicao() {
+    final e = (_student?["endereco"] ?? "").toString().trim();
+    return e.isEmpty ? "-" : e;
+  }
+
   Future<void> _saveProfile() async {
+    if (_isSavingProfile) return;
+    // TextField só “confirma” o texto ao sair do foco; sem isso o último
+    // caractere pode não entrar em composeEndereco().
+    FocusManager.instance.primaryFocus?.unfocus();
+    await Future<void>.delayed(const Duration(milliseconds: 80));
+    if (!mounted) return;
+    final addressState = _addressKey.currentState;
+    if (addressState == null) {
+      _showSnack(
+        "Nao foi possivel ler o endereco. Toque em Cancelar e em Editar de novo.",
+      );
+      return;
+    }
+    final enderecoErr = addressState.validateEnderecoParaSalvar();
+    if (enderecoErr != null) {
+      _showSnack(enderecoErr);
+      return;
+    }
+    final enderecoLine = addressState.composeEndereco().trim();
+
+    setState(() => _isSavingProfile = true);
     try {
-      final enderecoLine = _addressKey.currentState?.composeEndereco().trim();
       await _studentService.updateMyProfile(
         nome: _nomeController.text.trim().isEmpty ? null : _nomeController.text.trim(),
         telefone: _telefoneController.text.trim().isEmpty ? null : _telefoneController.text.trim(),
-        endereco: (enderecoLine == null || enderecoLine.isEmpty) ? null : enderecoLine,
+        endereco: enderecoLine.isEmpty ? null : enderecoLine,
         dataNascimento: _dataNascimentoController.text.trim().isEmpty ||
                 _dataNascimentoController.text.trim() == "-"
             ? null
@@ -149,6 +176,8 @@ class _ProfilePageState extends State<ProfilePage> {
       _showSnack("Dados atualizados com sucesso.");
     } catch (e) {
       _showSnack(e.toString().replaceFirst("Exception: ", ""));
+    } finally {
+      if (mounted) setState(() => _isSavingProfile = false);
     }
   }
 
@@ -165,7 +194,9 @@ class _ProfilePageState extends State<ProfilePage> {
                 ))
               : _student == null
                   ? const Center(child: Text("Dados nao encontrados."))
-                  : ListView(
+                  : Stack(
+                      children: [
+                        ListView(
                       padding: const EdgeInsets.all(16),
                       children: [
                         Center(
@@ -251,6 +282,22 @@ class _ProfilePageState extends State<ProfilePage> {
                                 ),
                               ),
                               const SizedBox(height: 12),
+                              InputDecorator(
+                                decoration: const InputDecoration(
+                                  labelText: "Graduação",
+                                  helperText:
+                                      "Definida pela equipe; não pode ser alterada aqui.",
+                                ),
+                                child: Text(
+                                  formatGraduacaoDisplay(
+                                    (_student!["graduacao"] ?? "").toString(),
+                                  ),
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 12),
                               BrAddressEditor(
                                 key: _addressKey,
                                 studentSnapshot: Map<String, dynamic>.from(
@@ -285,8 +332,28 @@ class _ProfilePageState extends State<ProfilePage> {
                               SizedBox(
                                 width: double.infinity,
                                 child: ElevatedButton(
-                                  onPressed: _saveProfile,
-                                  child: const Text("SALVAR"),
+                                  onPressed: (_isSavingProfile || _isUploadingPhoto)
+                                      ? null
+                                      : _saveProfile,
+                                  child: _isSavingProfile
+                                      ? const Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            SizedBox(
+                                              width: 20,
+                                              height: 20,
+                                              child: CircularProgressIndicator(
+                                                strokeWidth: 2,
+                                                color: Colors.white,
+                                              ),
+                                            ),
+                                            SizedBox(width: 12),
+                                            Text("SALVANDO..."),
+                                          ],
+                                        )
+                                      : const Text("SALVAR"),
                                 ),
                               ),
                               const SizedBox(height: 12),
@@ -295,10 +362,15 @@ class _ProfilePageState extends State<ProfilePage> {
                               _item("Nome", (_student!["nome"] ?? "-").toString()),
                               _item(
                                   "Telefone", (_student!["telefone"] ?? "-").toString()),
+                              _item("Endereco", _enderecoExibicao()),
                               _item(
                                   "Modalidade", (_student!["modalidade"] ?? "-").toString()),
                               _item(
-                                  "Graduacao", (_student!["graduacao"] ?? "-").toString()),
+                                "Graduacao",
+                                formatGraduacaoDisplay(
+                                  (_student!["graduacao"] ?? "").toString(),
+                                ),
+                              ),
                               _item("Status", (_student!["status"] ?? "-").toString()),
                               if (_diasTreinados != null)
                                 _item(
@@ -312,6 +384,34 @@ class _ProfilePageState extends State<ProfilePage> {
                                 ),
                               ),
                             ],
+                      ],
+                    ),
+                        if (_isSavingProfile)
+                          Positioned.fill(
+                            child: AbsorbPointer(
+                              child: DecoratedBox(
+                                decoration: BoxDecoration(
+                                  color: Colors.black.withValues(alpha: 0.45),
+                                ),
+                                child: const Center(
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      CircularProgressIndicator(),
+                                      SizedBox(height: 16),
+                                      Text(
+                                        "Salvando dados...",
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
                       ],
                     ),
     );

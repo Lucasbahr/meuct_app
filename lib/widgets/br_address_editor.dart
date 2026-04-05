@@ -77,29 +77,65 @@ class BrAddressEditorState extends State<BrAddressEditor> {
   }
 
   void _hydrateFromMap(Map<String, dynamic> m) {
-    final end = (m['endereco'] ?? '').toString();
+    final end = (m['endereco'] ?? '').toString().trim();
+    final logM = (m['logradouro'] ?? '').toString().trim();
+    final numM = (m['numero'] ?? '').toString().trim();
+    final compM = (m['complemento'] ?? '').toString();
+    final bairroM = (m['bairro'] ?? '').toString();
+    final cidadeM =
+        (m['localidade'] ?? m['cidade'] ?? '').toString();
+    final ufM = (m['uf'] ?? '').toString();
+
+    var parseSource = end;
+    if (parseSource.isEmpty && looksLikeComposedEnderecoLine(logM)) {
+      parseSource = logM;
+    }
 
     final cepRaw = (m['cep'] ?? '').toString().replaceAll(RegExp(r'\D'), '');
     if (cepRaw.length == 8) {
       _cep.text = '${cepRaw.substring(0, 5)}-${cepRaw.substring(5)}';
     } else {
-      final ex = extractCepFromEndereco(end);
+      final ex = extractCepFromEndereco(
+        parseSource.isNotEmpty ? parseSource : (end.isNotEmpty ? end : logM),
+      );
       _cep.text = ex ?? '';
     }
 
-    _logradouro.text = (m['logradouro'] ?? '').toString();
-    _numero.text = (m['numero'] ?? '').toString();
-    _complemento.text = (m['complemento'] ?? '').toString();
-    _bairro.text = (m['bairro'] ?? '').toString();
-    _cidade.text = (m['localidade'] ?? m['cidade'] ?? '').toString();
-    _uf.text = (m['uf'] ?? '').toString();
-
-    if (_logradouro.text.isEmpty && end.isNotEmpty) {
-      var rest = end.replaceAll(RegExp(r'\s*-\s*CEP\s*[\d-]+\s*$', caseSensitive: false), '').trim();
-      if (rest == end) {
-        rest = end.replaceAll(RegExp(r'CEP\s*[\d-]+\s*$', caseSensitive: false), '').trim();
+    if (parseSource.isNotEmpty) {
+      final p = parseEnderecoComposto(parseSource);
+      _logradouro.text = p.logradouro.isNotEmpty ? p.logradouro : logM;
+      _numero.text = p.numero.isNotEmpty ? p.numero : numM;
+      _complemento.text =
+          p.complemento.isNotEmpty ? p.complemento : compM;
+      _bairro.text = p.bairro.isNotEmpty ? p.bairro : bairroM;
+      _cidade.text = p.cidade.isNotEmpty ? p.cidade : cidadeM;
+      _uf.text = p.uf.isNotEmpty ? p.uf : ufM;
+      if (p.cep.isNotEmpty) {
+        _cep.text = p.cep;
       }
-      _logradouro.text = rest;
+      return;
+    }
+
+    final hasStructured = logM.isNotEmpty ||
+        numM.isNotEmpty ||
+        bairroM.trim().isNotEmpty ||
+        cidadeM.trim().isNotEmpty ||
+        ufM.trim().isNotEmpty;
+
+    if (hasStructured) {
+      _logradouro.text = logM;
+      _numero.text = numM;
+      _complemento.text = compM;
+      _bairro.text = bairroM;
+      _cidade.text = cidadeM;
+      _uf.text = ufM;
+    } else {
+      _logradouro.clear();
+      _numero.clear();
+      _complemento.clear();
+      _bairro.clear();
+      _cidade.clear();
+      _uf.clear();
     }
   }
 
@@ -113,6 +149,35 @@ class BrAddressEditorState extends State<BrAddressEditor> {
     _cidade.dispose();
     _uf.dispose();
     super.dispose();
+  }
+
+  bool _algumCampoEnderecoPreenchido() {
+    return _logradouro.text.trim().isNotEmpty ||
+        _numero.text.trim().isNotEmpty ||
+        _complemento.text.trim().isNotEmpty ||
+        _bairro.text.trim().isNotEmpty ||
+        _cidade.text.trim().isNotEmpty ||
+        _uf.text.trim().isNotEmpty ||
+        _cep.text.replaceAll(RegExp(r'\D'), '').isNotEmpty;
+  }
+
+  /// Complemento opcional. Se qualquer parte do endereço estiver preenchida, exige o restante (com número e CEP).
+  String? validateEnderecoParaSalvar() {
+    if (!_algumCampoEnderecoPreenchido()) return null;
+    if (_logradouro.text.trim().isEmpty) {
+      return 'Informe o logradouro (rua, avenida…).';
+    }
+    if (_numero.text.trim().isEmpty) {
+      return 'Informe o número. Só o complemento é opcional.';
+    }
+    if (_bairro.text.trim().isEmpty) return 'Informe o bairro.';
+    if (_cidade.text.trim().isEmpty) return 'Informe a cidade.';
+    if (_uf.text.trim().length != 2) {
+      return 'Informe a UF com 2 letras.';
+    }
+    final cep = _cep.text.replaceAll(RegExp(r'\D'), '');
+    if (cep.length != 8) return 'Informe o CEP com 8 dígitos.';
+    return null;
   }
 
   /// Valor para `endereco` na API (uma linha, formato brasileiro comum).
@@ -209,14 +274,6 @@ class BrAddressEditorState extends State<BrAddressEditor> {
               style: const TextStyle(color: Colors.orangeAccent, fontSize: 12),
             ),
           ),
-        const SizedBox(height: 4),
-        Text(
-          'A API aceita um único campo texto: o endereço é montado automaticamente abaixo.',
-          style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.55),
-            fontSize: 12,
-          ),
-        ),
         const SizedBox(height: 12),
         TextField(
           controller: _logradouro,

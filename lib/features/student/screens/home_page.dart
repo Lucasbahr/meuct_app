@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import '../../../core/graduacao/bjj_graduacao.dart';
 import '../../../core/api/dio_unauthorized.dart';
 import '../../../core/auth/session_service.dart';
 import '../../auth/repositories/auth_repository.dart';
 import '../services/student_service.dart';
 import '../services/checkin_service.dart';
 import '../../../widgets/drawer_widget.dart';
+import '../../../widgets/loading_overlay.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -169,9 +171,12 @@ class _HomePageState extends State<HomePage> {
           : student == null
               ? const Center(child: Text("Erro"))
               : SafeArea(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
+                  child: LoadingOverlay(
+                    visible: _isCheckingIn,
+                    message: 'Registrando check-in...',
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Container(
@@ -240,7 +245,9 @@ class _HomePageState extends State<HomePage> {
                                 children: [
                                   _infoItem(
                                     "Graduação",
-                                    student!["graduacao"] ?? "-",
+                                    formatGraduacaoDisplay(
+                                      (student!["graduacao"] ?? "").toString(),
+                                    ),
                                   ),
                                   _infoItem(
                                     "Status",
@@ -337,6 +344,7 @@ class _HomePageState extends State<HomePage> {
                           ),
                         ),
                       ],
+                    ),
                     ),
                   ),
                 ),

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import '../../../core/graduacao/bjj_graduacao.dart';
 import '../../../widgets/br_address_editor.dart';
+import '../../../widgets/loading_overlay.dart';
 import '../services/admin_service.dart';
 
 class AdminEditStudentPage extends StatefulWidget {
@@ -23,7 +25,6 @@ class _AdminEditStudentPageState extends State<AdminEditStudentPage> {
   final GlobalKey<BrAddressEditorState> _addressKey =
       GlobalKey<BrAddressEditorState>();
   final _modalidadeController = TextEditingController();
-  final _graduacaoController = TextEditingController();
   final _statusController = TextEditingController();
   final _tempoTreinoController = TextEditingController();
   final _cartelMmaController = TextEditingController();
@@ -37,11 +38,15 @@ class _AdminEditStudentPageState extends State<AdminEditStudentPage> {
 
   bool _eAtleta = false;
   bool _isSaving = false;
+  String _blockingLabel = 'Aguarde...';
   String? _error;
+  late String _graduacaoSelecionada;
 
   int? get _studentId {
     final id = widget.student["id"];
-    return id is int ? id : null;
+    if (id is int) return id;
+    if (id is num) return id.toInt();
+    return null;
   }
 
   @override
@@ -52,7 +57,9 @@ class _AdminEditStudentPageState extends State<AdminEditStudentPage> {
     _nomeController.text = (widget.student["nome"] ?? "").toString();
     _telefoneController.text = (widget.student["telefone"] ?? "").toString();
     _modalidadeController.text = (widget.student["modalidade"] ?? "").toString();
-    _graduacaoController.text = (widget.student["graduacao"] ?? "").toString();
+    _graduacaoSelecionada = graduacaoSelecionavelInicial(
+      widget.student["graduacao"]?.toString(),
+    );
     _statusController.text = (widget.student["status"] ?? "").toString();
     _tempoTreinoController.text =
         (widget.student["tempo_de_treino"] ?? "").toString();
@@ -78,7 +85,6 @@ class _AdminEditStudentPageState extends State<AdminEditStudentPage> {
     _nomeController.dispose();
     _telefoneController.dispose();
     _modalidadeController.dispose();
-    _graduacaoController.dispose();
     _statusController.dispose();
     _tempoTreinoController.dispose();
     _cartelMmaController.dispose();
@@ -122,28 +128,48 @@ class _AdminEditStudentPageState extends State<AdminEditStudentPage> {
     return _dateToIso(parsed);
   }
 
+  String _graduacaoDropdownValue() {
+    final items = graduacoesDropdownItens(valorAtual: _graduacaoSelecionada);
+    return alignGraduacaoDropdownValue(_graduacaoSelecionada, items);
+  }
+
+  /// API aceita só `amador` | `profissional` (StudentUpdate / Literal).
+  String? _cleanNivelCompeticao(TextEditingController c) {
+    final v = c.text.trim().toLowerCase();
+    if (v.isEmpty) return null;
+    if (v == "amador" || v == "profissional") return v;
+    return null;
+  }
+
   Map<String, dynamic> _buildPayload() {
     final enderecoLine = _addressKey.currentState?.composeEndereco().trim();
-    return {
-      "email": _cleanString(_emailController),
+    // StudentAdminUpdate não tem `email` e usa extra=forbid → enviar "email" gera 422.
+    // Só enviar chaves com valor: evita mandar null em tudo e sobrescrever campos no backend.
+    final map = <String, dynamic>{
       "nome": _cleanString(_nomeController),
       "telefone": _cleanString(_telefoneController),
       "endereco":
           (enderecoLine == null || enderecoLine.isEmpty) ? null : enderecoLine,
       "modalidade": _cleanString(_modalidadeController),
-      "graduacao": _cleanString(_graduacaoController),
+      "graduacao": () {
+        final g = _graduacaoSelecionada.trim();
+        final c = canonicalGraduacaoBjj(g);
+        return c ?? (g.isEmpty ? graduacaoInicialAluno : g);
+      }(),
       "status": _cleanString(_statusController),
       "e_atleta": _eAtleta,
       "tempo_de_treino": _cleanInt(_tempoTreinoController),
       "cartel_mma": _cleanString(_cartelMmaController),
       "cartel_jiu": _cleanString(_cartelJiuController),
       "cartel_k1": _cleanString(_cartelK1Controller),
-      "nivel_competicao": _cleanString(_nivelCompeticaoController),
+      "nivel_competicao": _cleanNivelCompeticao(_nivelCompeticaoController),
       "link_tapology": _cleanString(_linkTapologyController),
       "data_nascimento": _normalizeDate(_dataNascimentoController),
       "ultima_luta_em": _normalizeDate(_ultimaLutaEmController),
       "ultima_luta_modalidade": _cleanString(_ultimaLutaModalidadeController),
     };
+    map.removeWhere((_, v) => v == null);
+    return map;
   }
 
   Future<void> _save() async {
@@ -153,8 +179,23 @@ class _AdminEditStudentPageState extends State<AdminEditStudentPage> {
     setState(() {
       _isSaving = true;
       _error = null;
+      _blockingLabel = 'Salvando dados do aluno...';
     });
     try {
+      FocusManager.instance.primaryFocus?.unfocus();
+      await Future<void>.delayed(const Duration(milliseconds: 80));
+      if (!mounted) return;
+      final addressState = _addressKey.currentState;
+      if (addressState != null) {
+        final enderecoErr = addressState.validateEnderecoParaSalvar();
+        if (enderecoErr != null) {
+          setState(() {
+            _isSaving = false;
+            _error = enderecoErr;
+          });
+          return;
+        }
+      }
       await widget.service.updateStudent(id, _buildPayload());
       if (!mounted) return;
       Navigator.pop(context, true);
@@ -195,6 +236,7 @@ class _AdminEditStudentPageState extends State<AdminEditStudentPage> {
     setState(() {
       _isSaving = true;
       _error = null;
+      _blockingLabel = 'Excluindo aluno...';
     });
     try {
       await widget.service.deleteStudent(id);
@@ -216,11 +258,14 @@ class _AdminEditStudentPageState extends State<AdminEditStudentPage> {
       appBar: AppBar(
         title: Text("Editar: $nome"),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+      body: LoadingOverlay(
+        visible: _isSaving,
+        message: _blockingLabel,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
             if (_error != null)
               Padding(
                 padding: const EdgeInsets.only(bottom: 12),
@@ -242,7 +287,11 @@ class _AdminEditStudentPageState extends State<AdminEditStudentPage> {
                   width: 320,
                   child: TextField(
                     controller: _emailController,
-                    decoration: const InputDecoration(labelText: "Email"),
+                    decoration: const InputDecoration(
+                      labelText: "Email",
+                      helperText:
+                          "Não é alterado ao salvar aluno (rota PUT não aceita email).",
+                    ),
                     keyboardType: TextInputType.emailAddress,
                   ),
                 ),
@@ -276,9 +325,21 @@ class _AdminEditStudentPageState extends State<AdminEditStudentPage> {
                 ),
                 SizedBox(
                   width: 320,
-                  child: TextField(
-                    controller: _graduacaoController,
+                  child: DropdownButtonFormField<String>(
+                    value: _graduacaoDropdownValue(),
                     decoration: const InputDecoration(labelText: "Graduação"),
+                    items: graduacoesDropdownItens(valorAtual: _graduacaoSelecionada)
+                        .map(
+                          (g) => DropdownMenuItem<String>(
+                            value: g,
+                            child: Text(formatGraduacaoDisplay(g)),
+                          ),
+                        )
+                        .toList(),
+                    onChanged: (v) {
+                      if (v == null) return;
+                      setState(() => _graduacaoSelecionada = v);
+                    },
                   ),
                 ),
                 SizedBox(
@@ -443,7 +504,10 @@ class _AdminEditStudentPageState extends State<AdminEditStudentPage> {
                   onPressed: (_isSaving || _emailController.text.trim().isEmpty)
                       ? null
                       : () async {
-                          setState(() => _isSaving = true);
+                          setState(() {
+                            _isSaving = true;
+                            _blockingLabel = 'Promovendo a administrador...';
+                          });
                           try {
                             await widget.service.setUserRoleByEmail(
                               email: _emailController.text.trim(),
@@ -469,7 +533,10 @@ class _AdminEditStudentPageState extends State<AdminEditStudentPage> {
                   onPressed: (_isSaving || _emailController.text.trim().isEmpty)
                       ? null
                       : () async {
-                          setState(() => _isSaving = true);
+                          setState(() {
+                            _isSaving = true;
+                            _blockingLabel = 'Atualizando permissão...';
+                          });
                           try {
                             await widget.service.setUserRoleByEmail(
                               email: _emailController.text.trim(),
@@ -494,6 +561,7 @@ class _AdminEditStudentPageState extends State<AdminEditStudentPage> {
               ],
             ),
           ],
+        ),
         ),
       ),
     );
