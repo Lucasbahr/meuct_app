@@ -1,8 +1,8 @@
-name: Build & Distribute APK
+name: Build APK & Firebase Hosting
 
 on:
   push:
-    branches: ["master"]
+    branches: ["main", "master"]
   workflow_dispatch:
 
 jobs:
@@ -37,7 +37,6 @@ jobs:
         run: |
           VERSION_NAME=$(date +'%Y.%m.%d')
           BUILD_NUMBER=${{ github.run_number }}
-
           echo "VERSION_NAME=$VERSION_NAME" >> $GITHUB_ENV
           echo "BUILD_NUMBER=$BUILD_NUMBER" >> $GITHUB_ENV
 
@@ -47,32 +46,28 @@ jobs:
             --build-name="$VERSION_NAME" \
             --build-number="$BUILD_NUMBER"
 
-      - name: Build AAB (futuro Play Store)
-        run: flutter build appbundle --release
-
-      - name: Verificar APK
-        run: ls -lh build/app/outputs/flutter-apk/
-
-      - name: Renomear APK
+      - name: APK para Firebase Hosting
         run: |
-          mv build/app/outputs/flutter-apk/app-release.apk \
-            "build/app/outputs/flutter-apk/genesismma-v${VERSION_NAME}-build${BUILD_NUMBER}.apk"
+          mkdir -p public/downloads
+          cp -f build/app/outputs/flutter-apk/app-release.apk public/downloads/genesismma.apk
+          ls -lh public/downloads/
+          ls -lh public/
 
       - name: Instalar Firebase CLI
         run: npm install -g firebase-tools
 
-      # 🔐 Cria arquivo da service account a partir do secret
-      - name: Criar credencial Firebase (Service Account)
+      - name: Credencial Firebase (Service Account)
         run: |
-          echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > firebase-key.json
-
-      - name: Distribuir no Firebase
-        run: |
-          firebase appdistribution:distribute \
-            "build/app/outputs/flutter-apk/genesismma-v${VERSION_NAME}-build${BUILD_NUMBER}.apk" \
-            --app "${{ secrets.FIREBASE_APP_ID }}" \
-            --groups "alunos" \
-            --release-notes "Release ${VERSION_NAME} (build ${BUILD_NUMBER}) - commit ${{ github.sha }}" \
-            --debug
+          echo "$FIREBASE_SA_JSON" > "$GITHUB_WORKSPACE/firebase-sa.json"
+          test -s firebase-sa.json
         env:
-          GOOGLE_APPLICATION_CREDENTIALS: firebase-key.json
+          FIREBASE_SA_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+
+      - name: Deploy Firebase Hosting
+        run: firebase deploy --only hosting --project meuct-app --non-interactive
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ github.workspace }}/firebase-sa.json
+
+      - name: Remover credencial local
+        if: always()
+        run: rm -f "$GITHUB_WORKSPACE/firebase-sa.json"
