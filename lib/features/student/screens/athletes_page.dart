@@ -416,11 +416,17 @@ class _AthletePhotoLayerState extends State<_AthletePhotoLayer> {
             ),
           );
         }
-        return Image.memory(
-          b,
-          fit: BoxFit.cover,
-          alignment: Alignment.topCenter,
-          gaplessPlayback: true,
+        // Contain = foto inteira dentro do cartão (sem crop tipo “zoom”).
+        // Faixas escuras nas bordas se a proporção não bater com o retângulo.
+        return ColoredBox(
+          color: const Color(0xFF101010),
+          child: Image.memory(
+            b,
+            fit: BoxFit.contain,
+            alignment: Alignment.center,
+            gaplessPlayback: true,
+            isAntiAlias: true,
+          ),
         );
       },
     );
@@ -792,10 +798,21 @@ class _DetailAvatarState extends State<_DetailAvatar> {
                 : Icon(Icons.person, size: 40, color: widget.primary),
           );
         }
-        return CircleAvatar(
-          radius: 36,
-          backgroundColor: const Color(0xFF2A2A2A),
-          backgroundImage: MemoryImage(snap.data!),
+        const side = 72.0;
+        return ClipOval(
+          child: ColoredBox(
+            color: const Color(0xFF2A2A2A),
+            child: SizedBox(
+              width: side,
+              height: side,
+              child: Image.memory(
+                snap.data!,
+                fit: BoxFit.contain,
+                gaplessPlayback: true,
+                isAntiAlias: true,
+              ),
+            ),
+          ),
         );
       },
     );
