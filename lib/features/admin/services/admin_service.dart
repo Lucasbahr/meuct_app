@@ -78,6 +78,29 @@ class AdminService {
     }
   }
 
+  Future<Map<String, dynamic>> uploadStudentAthleteCardPhoto(
+    int studentId,
+    String filePath,
+  ) async {
+    final baseName = filePath.replaceAll("\\", "/").split("/").last;
+    final formData = FormData.fromMap({
+      "file": await MultipartFile.fromFile(filePath, filename: baseName),
+    });
+    try {
+      final response = await dio.post(
+        "/students/$studentId/athlete-card/photo",
+        data: formData,
+      );
+      final data = response.data;
+      if (data is Map<String, dynamic> && data["data"] is Map) {
+        return Map<String, dynamic>.from(data["data"] as Map);
+      }
+      return {};
+    } on DioException catch (e) {
+      throw _mapError(e, "Falha ao enviar foto do cartão do atleta.");
+    }
+  }
+
   /// Registra presença (check-in) em nome do aluno — apenas ADMIN (POST `/checkin/` com `student_id`).
   Future<void> checkInForStudent(int studentId) async {
     try {

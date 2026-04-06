@@ -41,12 +41,8 @@ class AdminAthleteDetailPage extends StatelessWidget {
 Nome: ${athlete["nome"] ?? "-"}
 Data de nascimento: ${_formatDate(birth)}
 Idade: ${age?.toString() ?? "-"} anos
-Email: ${athlete["email"] ?? "-"}
-Telefone: ${athlete["telefone"] ?? "-"}
 Modalidade: ${athlete["modalidade"] ?? "-"}
 Graduacao: ${formatGraduacaoDisplay((athlete["graduacao"] ?? "").toString())}
-Status: ${athlete["status"] ?? "-"}
-Atleta: ${(athlete["e_atleta"] ?? false) == true ? "SIM" : "NAO"}
 Cartel MMA: ${athlete["cartel_mma"] ?? "-"}
 Cartel Jiu: ${athlete["cartel_jiu"] ?? "-"}
 Cartel K1: ${athlete["cartel_k1"] ?? "-"}
@@ -122,18 +118,11 @@ Ultima luta: ${athlete["ultima_luta_em"] ?? "-"} (${athlete["ultima_luta_modalid
           ),
           const SizedBox(height: 12),
           _item("Nome", (athlete["nome"] ?? "-").toString()),
-          _item("Email", (athlete["email"] ?? "-").toString()),
-          _item("Telefone", (athlete["telefone"] ?? "-").toString()),
           _item("Endereco", (athlete["endereco"] ?? "-").toString()),
           _item("Modalidade", (athlete["modalidade"] ?? "-").toString()),
           _item(
             "Graduacao",
             formatGraduacaoDisplay((athlete["graduacao"] ?? "").toString()),
-          ),
-          _item("Status", (athlete["status"] ?? "-").toString()),
-          _item(
-            "Atleta",
-            (athlete["e_atleta"] ?? false) == true ? "SIM" : "NAO",
           ),
           _item(
             "Data nascimento",

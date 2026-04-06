@@ -207,15 +207,39 @@ class _FeedPageState extends State<FeedPage> {
   }
 
   String? _feedImageLink(Map<String, dynamic> item) {
-    for (final k in [
+    String? pick(dynamic v) {
+      if (v is String && v.trim().isNotEmpty) return v.trim();
+      return null;
+    }
+
+    const keys = [
       'imagem_link',
       'link_imagem',
       'image_link',
       'url_imagem',
+      'link_redirect',
       'link',
-    ]) {
-      final v = item[k];
-      if (v is String && v.trim().isNotEmpty) return v.trim();
+      'imagemUrl',
+      'imageUrl',
+      'url',
+    ];
+
+    String? fromMap(Map<String, dynamic> m) {
+      for (final k in keys) {
+        final x = pick(m[k]);
+        if (x != null) return x;
+      }
+      return null;
+    }
+
+    final top = fromMap(item);
+    if (top != null) return top;
+    for (final nest in ['metadata', 'extra', 'payload']) {
+      final nested = item[nest];
+      if (nested is Map) {
+        final r = fromMap(Map<String, dynamic>.from(nested));
+        if (r != null) return r;
+      }
     }
     return null;
   }
@@ -223,16 +247,40 @@ class _FeedPageState extends State<FeedPage> {
   Future<void> _openExternalUrl(String raw) async {
     var s = raw.trim();
     if (s.isEmpty) return;
-    if (!s.startsWith('http://') && !s.startsWith('https://')) {
+    if (s.startsWith('//')) {
+      s = 'https:$s';
+    } else if (!s.contains('://')) {
       s = 'https://$s';
     }
     final u = Uri.tryParse(s);
-    if (u == null) return;
-    final ok = await launchUrl(u, mode: LaunchMode.externalApplication);
-    if (!ok && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Não foi possível abrir o link.')),
-      );
+    if (u == null || !u.hasScheme || u.host.isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Link inválido. Use https://... ou domínio válido.')),
+        );
+      }
+      return;
+    }
+    try {
+      var ok = await launchUrl(u, mode: LaunchMode.externalApplication);
+      if (!ok) {
+        ok = await launchUrl(u, mode: LaunchMode.platformDefault);
+      }
+      if (!ok && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Não foi possível abrir o link.')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Erro ao abrir link: ${e.toString().replaceFirst('Exception: ', '')}',
+            ),
+          ),
+        );
+      }
     }
   }
 
@@ -616,9 +664,14 @@ class _FeedPageState extends State<FeedPage> {
       if (tipo == "graduacao")
         "graduacao":
             canonicalGraduacaoBjj(graduacaoPost) ?? graduacaoPost.trim(),
-      if (linkImagemController.text.trim().isNotEmpty)
-        "imagem_link": linkImagemController.text.trim(),
     };
+    final linkTap = linkImagemController.text.trim();
+    if (linkTap.isNotEmpty) {
+      payload["imagem_link"] = linkTap;
+    } else if (existing != null) {
+      // Limpa o link no servidor ao editar e apagar o campo.
+      payload["imagem_link"] = null;
+    }
 
     try {
       if (existing == null) {
@@ -754,6 +807,7 @@ class _FeedPageState extends State<FeedPage> {
                       if (imageUrl != null) ...[
                         const SizedBox(height: 10),
                         GestureDetector(
+                          behavior: HitTestBehavior.opaque,
                           onTap: () => _onFeedImageTap(imageUrl, item),
                           onLongPress: _feedImageLink(item) != null
                               ? () => _openImageFullScreen(imageUrl)
