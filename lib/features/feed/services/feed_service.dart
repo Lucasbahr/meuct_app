@@ -187,6 +187,13 @@ class FeedService {
       if (detail is String && detail.isNotEmpty) return AppException(detail);
       if (message is String && message.isNotEmpty) return AppException(message);
     }
+    final code = e.response?.statusCode;
+    if (code == 500) {
+      return AppException(
+        "$fallback O servidor falhou (500). "
+        "Se a API foi atualizada, falta migração no banco (alembic upgrade head ou novo deploy da API com Docker).",
+      );
+    }
     return AppException(fallback);
   }
 }
