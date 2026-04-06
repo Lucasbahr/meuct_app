@@ -39,12 +39,14 @@ jobs:
       - name: Instalar dependências
         run: flutter pub get
 
-      - name: Gerar versão automática
+      - name: Versão a partir do pubspec + build CI
         run: |
-          VERSION_NAME=$(date +'%Y.%m.%d')
+          FULL=$(grep -E '^version:' pubspec.yaml | head -1 | awk '{print $2}')
+          VERSION_NAME="${FULL%%+*}"
           BUILD_NUMBER=${{ github.run_number }}
           echo "VERSION_NAME=$VERSION_NAME" >> $GITHUB_ENV
           echo "BUILD_NUMBER=$BUILD_NUMBER" >> $GITHUB_ENV
+          echo "pubspec: $FULL → versionName=$VERSION_NAME versionCode=$BUILD_NUMBER"
 
       - name: Build APK (release)
         env:
@@ -63,10 +65,12 @@ jobs:
       - name: Publicar APK no GitHub Releases
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: build-${{ github.run_number }}-${{ github.run_id }}
+          tag_name: v${{ env.VERSION_NAME }}-b${{ github.run_number }}
           name: Genesis MMA ${{ env.VERSION_NAME }} (build ${{ env.BUILD_NUMBER }})
           body: |
-            APK automático — `${{ github.sha }}`
+            **versionName:** `${{ env.VERSION_NAME }}` · **versionCode:** `${{ env.BUILD_NUMBER }}`
+
+            Commit: `${{ github.sha }}`
           files: genesismma.apk
           make_latest: true
         env:

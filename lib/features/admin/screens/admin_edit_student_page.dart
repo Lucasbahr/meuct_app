@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../../core/graduacao/bjj_graduacao.dart';
 import '../../../widgets/br_address_editor.dart';
 import '../../../widgets/loading_overlay.dart';
@@ -356,6 +357,61 @@ class _AdminEditStudentPageState extends State<AdminEditStudentPage> {
               value: _eAtleta,
               onChanged: (v) => setState(() => _eAtleta = v),
               title: const Text("É atleta"),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              "Foto do cartão (aba Atletas)",
+              style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              "Independente da foto de perfil. Só aparece nos cartões se o aluno for atleta.",
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+            ),
+            const SizedBox(height: 8),
+            OutlinedButton.icon(
+              onPressed: (_isSaving || _studentId == null)
+                  ? null
+                  : () async {
+                      final id = _studentId!;
+                      final picker = ImagePicker();
+                      final image = await picker.pickImage(
+                        source: ImageSource.gallery,
+                        imageQuality: 85,
+                      );
+                      if (image == null || !mounted) return;
+                      setState(() {
+                        _isSaving = true;
+                        _blockingLabel = 'Enviando foto do cartão...';
+                        _error = null;
+                      });
+                      try {
+                        await widget.service.uploadStudentAthleteCardPhoto(
+                          id,
+                          image.path,
+                        );
+                        if (!context.mounted) return;
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text("Foto do cartão enviada."),
+                          ),
+                        );
+                      } catch (e) {
+                        if (!mounted) return;
+                        setState(() {
+                          _error =
+                              e.toString().replaceFirst("Exception: ", "");
+                        });
+                      } finally {
+                        if (mounted) setState(() => _isSaving = false);
+                      }
+                    },
+              icon: const Icon(Icons.photo_camera_back_outlined),
+              label: const Text("Enviar foto do cartão"),
             ),
             const Divider(height: 24),
             const Text(
