@@ -5,9 +5,18 @@ import '../../../core/errors/app_exception.dart';
 class FeedService {
   final Dio dio = ApiClient().dio;
 
-  Future<List<Map<String, dynamic>>> listFeed() async {
+  Future<List<Map<String, dynamic>>> listFeed({
+    int limit = 50,
+    int offset = 0,
+  }) async {
     try {
-      final response = await dio.get("/feed/");
+      final response = await dio.get(
+        "/feed/",
+        queryParameters: {
+          "limit": limit,
+          "offset": offset,
+        },
+      );
       final data = response.data;
       if (data is Map<String, dynamic> && data["data"] is List) {
         return (data["data"] as List)

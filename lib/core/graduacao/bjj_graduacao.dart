@@ -66,3 +66,39 @@ String formatGraduacaoDisplay(String? raw) {
       })
       .join(' ');
 }
+
+/// Resposta `GET /students/me`: usa `graduacao` (legado) ou `modalities[].graduation_name`.
+String graduationLabelFromStudent(Map<String, dynamic> s) {
+  final legacy = s['graduacao']?.toString().trim() ?? '';
+  if (legacy.isNotEmpty) {
+    return formatGraduacaoDisplay(legacy);
+  }
+  final mods = s['modalities'];
+  if (mods is List) {
+    for (final item in mods) {
+      if (item is! Map) continue;
+      final m = Map<String, dynamic>.from(item);
+      final name = m['graduation_name']?.toString().trim() ?? '';
+      if (name.isNotEmpty) {
+        return formatGraduacaoDisplay(name);
+      }
+    }
+  }
+  return formatGraduacaoDisplay(null);
+}
+
+/// Mesmo payload: `modalidade` ou `modalities[].modality_name`.
+String modalityLabelFromStudent(Map<String, dynamic> s) {
+  final legacy = s['modalidade']?.toString().trim() ?? '';
+  if (legacy.isNotEmpty) return legacy;
+  final mods = s['modalities'];
+  if (mods is List) {
+    for (final item in mods) {
+      if (item is! Map) continue;
+      final m = Map<String, dynamic>.from(item);
+      final name = m['modality_name']?.toString().trim() ?? '';
+      if (name.isNotEmpty) return name;
+    }
+  }
+  return '-';
+}

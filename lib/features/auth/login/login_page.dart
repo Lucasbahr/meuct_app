@@ -1,7 +1,13 @@
 import 'dart:async';
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import '../../../core/api/dio_unauthorized.dart';
+import '../../../core/auth/session_service.dart';
+import '../../../core/branding/app_branding.dart';
+import '../../../core/storage/gym_context_storage.dart';
 import '../../../core/storage/token_storage.dart';
+import '../../../widgets/password_field_with_visibility.dart';
+import '../../gyms/screens/gym_select_page.dart';
 import '../../student/services/student_service.dart';
 import '../repositories/auth_repository.dart';
 
@@ -56,9 +62,36 @@ class _LoginPageState extends State<LoginPage>
       if (token == null || token.isEmpty) return;
 
       try {
-        await StudentService()
-            .getMe()
-            .timeout(const Duration(seconds: 25));
+        await GymContextStorage.instance.syncFromAccessToken(token);
+        final session = SessionService();
+        final sysAdmin = await session.isSystemAdmin();
+        if (sysAdmin) {
+          var gid = await GymContextStorage.instance.getGymId();
+          final fromToken = await session.getGymIdFromToken();
+          if (gid == null && fromToken != null) {
+            await GymContextStorage.instance.setGymId(fromToken);
+            gid = fromToken;
+          }
+          if (gid == null) {
+            if (!mounted) return;
+            await Navigator.of(context).push<int>(
+              MaterialPageRoute(
+                fullscreenDialog: true,
+                builder: (_) => const GymSelectPage(barrierDismissible: false),
+              ),
+            );
+            if (!mounted) return;
+          }
+        }
+        await AppBrandingController.instance.refreshFromApi();
+        if (!mounted) return;
+        try {
+          await StudentService()
+              .getMe()
+              .timeout(const Duration(seconds: 25));
+        } catch (e) {
+          if (!dioIsNotFound(e) || !sysAdmin) rethrow;
+        }
         if (!mounted) return;
         openedHome = true;
         Navigator.pushReplacementNamed(context, "/home");
@@ -85,6 +118,27 @@ class _LoginPageState extends State<LoginPage>
         passwordController.text,
       );
 
+      if (!mounted) return;
+      final session = SessionService();
+      if (await session.isSystemAdmin()) {
+        var gid = await GymContextStorage.instance.getGymId();
+        final fromToken = await session.getGymIdFromToken();
+        if (gid == null && fromToken != null) {
+          await GymContextStorage.instance.setGymId(fromToken);
+          gid = fromToken;
+        }
+        if (gid == null) {
+          if (!mounted) return;
+          await Navigator.of(context).push<int>(
+            MaterialPageRoute(
+              fullscreenDialog: true,
+              builder: (_) => const GymSelectPage(barrierDismissible: false),
+            ),
+          );
+          if (!mounted) return;
+        }
+      }
+      await AppBrandingController.instance.refreshFromApi();
       if (!mounted) return;
       Navigator.pushNamed(context, "/home");
     } catch (e) {
@@ -192,17 +246,16 @@ class _LoginPageState extends State<LoginPage>
 
                       const SizedBox(height: 10),
 
-                      TextField(
+                      PasswordFieldWithVisibility(
                         controller: passwordController,
-                        obscureText: true,
+                        hintText: "Senha",
                         style: const TextStyle(color: Colors.white),
-                        decoration: InputDecoration(
-                          hintText: "Senha",
-                          hintStyle: const TextStyle(color: Colors.white54),
+                        decoration: const InputDecoration(
+                          hintStyle: TextStyle(color: Colors.white54),
                           filled: true,
-                          fillColor: const Color(0xFF2A2A2A),
+                          fillColor: Color(0xFF2A2A2A),
                           border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(10),
+                            borderRadius: BorderRadius.all(Radius.circular(10)),
                             borderSide: BorderSide.none,
                           ),
                         ),

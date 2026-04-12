@@ -134,6 +134,41 @@ class AdminService {
     }
   }
 
+  /// Cria usuário já verificado na academia do contexto (`X-Gym-Id`).
+  Future<Map<String, dynamic>> provisionUser({
+    required String email,
+    required String password,
+    required String role,
+  }) async {
+    try {
+      final response = await dio.post(
+        "/admin/users/provision",
+        data: {
+          "email": email.trim(),
+          "password": password,
+          "role": role,
+        },
+      );
+      final data = response.data;
+      if (data is! Map<String, dynamic>) {
+        throw const AppException("Resposta inválida ao criar usuário.");
+      }
+      if (data["success"] == false) {
+        throw AppException(
+          data["message"]?.toString().trim().isNotEmpty == true
+              ? data["message"].toString()
+              : "Não foi possível criar o usuário.",
+        );
+      }
+      if (data["data"] is Map) {
+        return Map<String, dynamic>.from(data["data"] as Map);
+      }
+      throw const AppException("Resposta inválida ao criar usuário.");
+    } on DioException catch (e) {
+      throw _mapError(e, "Falha ao criar usuário na academia.");
+    }
+  }
+
   Future<void> setUserRoleByEmail({
     required String email,
     required String role,
