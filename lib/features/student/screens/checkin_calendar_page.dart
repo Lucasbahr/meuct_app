@@ -173,7 +173,8 @@ class _CheckinCalendarPageState extends State<CheckinCalendarPage> {
 
   @override
   Widget build(BuildContext context) {
-    final primary = Theme.of(context).colorScheme.primary;
+    final cs = Theme.of(context).colorScheme;
+    final primary = cs.primary;
     final days = List<DateTime>.generate(7, (i) => _weekStart.add(Duration(days: i)));
 
     final selectedTotal = _checkinsByDay[dateOnly(_selectedDay)] ?? 0;
@@ -207,8 +208,11 @@ class _CheckinCalendarPageState extends State<CheckinCalendarPage> {
                       Container(
                         padding: const EdgeInsets.all(14),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF1E1E1E),
+                          color: cs.surfaceContainerHigh,
                           borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: cs.outline.withValues(alpha: 0.2),
+                          ),
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -216,11 +220,12 @@ class _CheckinCalendarPageState extends State<CheckinCalendarPage> {
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                const Text(
+                                Text(
                                   "Resumo",
                                   style: TextStyle(
                                     fontWeight: FontWeight.w700,
                                     fontSize: 16,
+                                    color: cs.onSurface,
                                   ),
                                 ),
                                 Flexible(
@@ -228,7 +233,7 @@ class _CheckinCalendarPageState extends State<CheckinCalendarPage> {
                                     "Mês: ${_summary!["total_mes"] ?? 0} · "
                                     "Geral: ${_summary!["total_geral"] ?? 0}",
                                     textAlign: TextAlign.end,
-                                    style: const TextStyle(color: Colors.white70),
+                                    style: TextStyle(color: cs.onSurfaceVariant),
                                   ),
                                 ),
                               ],
@@ -236,8 +241,8 @@ class _CheckinCalendarPageState extends State<CheckinCalendarPage> {
                             const SizedBox(height: 10),
                             Text(
                               "Dias com check-in: $diasComTreino",
-                              style: const TextStyle(
-                                color: Colors.white54,
+                              style: TextStyle(
+                                color: cs.onSurfaceVariant,
                                 fontSize: 13,
                               ),
                             ),
@@ -248,15 +253,21 @@ class _CheckinCalendarPageState extends State<CheckinCalendarPage> {
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF1E1E1E),
+                        color: cs.surfaceContainerHigh,
                         borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: cs.outline.withValues(alpha: 0.2),
+                        ),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          const Text(
+                          Text(
                             "Semana",
-                            style: TextStyle(fontWeight: FontWeight.bold),
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: cs.onSurface,
+                            ),
                           ),
                           const SizedBox(height: 10),
                           GridView.builder(
@@ -283,10 +294,12 @@ class _CheckinCalendarPageState extends State<CheckinCalendarPage> {
                                 child: Container(
                                   decoration: BoxDecoration(
                                     color: isSelected
-                                        ? primary.withValues(alpha: 0.22)
+                                        ? primary.withValues(alpha: 0.15)
                                         : Colors.transparent,
                                     border: Border.all(
-                                      color: isSelected ? primary : Colors.white10,
+                                      color: isSelected
+                                          ? primary
+                                          : cs.outline.withValues(alpha: 0.35),
                                     ),
                                     borderRadius: BorderRadius.circular(12),
                                   ),
@@ -305,8 +318,8 @@ class _CheckinCalendarPageState extends State<CheckinCalendarPage> {
                                             fontSize: 11,
                                             fontWeight: FontWeight.w700,
                                             color: isSelected
-                                                ? Colors.white
-                                                : Colors.white70,
+                                                ? cs.onSurface
+                                                : cs.onSurfaceVariant,
                                           ),
                                         ),
                                       ),
@@ -318,7 +331,8 @@ class _CheckinCalendarPageState extends State<CheckinCalendarPage> {
                                           decoration: BoxDecoration(
                                             color: total > 0
                                                 ? primary
-                                                : Colors.white12,
+                                                : cs.outline
+                                                    .withValues(alpha: 0.25),
                                             shape: BoxShape.circle,
                                           ),
                                         ),
@@ -336,20 +350,26 @@ class _CheckinCalendarPageState extends State<CheckinCalendarPage> {
                     Container(
                       padding: const EdgeInsets.all(14),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF1E1E1E),
+                        color: cs.surfaceContainerHigh,
                         borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: cs.outline.withValues(alpha: 0.2),
+                        ),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
                             "Dia selecionado: ${_selectedDay.day}/${_selectedDay.month}/${_selectedDay.year}",
-                            style: const TextStyle(fontWeight: FontWeight.w700),
+                            style: TextStyle(
+                              fontWeight: FontWeight.w700,
+                              color: cs.onSurface,
+                            ),
                           ),
                           const SizedBox(height: 8),
                           Text(
                             "Check-ins neste dia: $selectedTotal",
-                            style: const TextStyle(color: Colors.white70),
+                            style: TextStyle(color: cs.onSurfaceVariant),
                           ),
                         ],
                       ),
@@ -369,7 +389,7 @@ class _CheckinCalendarPageState extends State<CheckinCalendarPage> {
                       "Você pode fazer mais de um por dia, em aulas diferentes. "
                       "É necessário estar no horário da aula (com tolerância).",
                       style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.55),
+                        color: cs.onSurfaceVariant,
                         fontSize: 12,
                         height: 1.35,
                       ),
@@ -385,7 +405,7 @@ class _CheckinCalendarPageState extends State<CheckinCalendarPage> {
                               : "Só é possível check-in no dia de hoje. "
                                   "Selecione a data atual no calendário.",
                           textAlign: TextAlign.center,
-                          style: const TextStyle(color: Colors.white54),
+                          style: TextStyle(color: cs.onSurfaceVariant),
                         ),
                       )
                     else
@@ -403,17 +423,24 @@ class _CheckinCalendarPageState extends State<CheckinCalendarPage> {
                             dateOnly(_selectedDay) == dateOnly(DateTime.now());
 
                         return Card(
-                          color: const Color(0xFF252525),
                           margin: const EdgeInsets.only(bottom: 10),
                           child: ListTile(
-                            title: Text(name,
-                                style: const TextStyle(fontWeight: FontWeight.w600)),
+                            title: Text(
+                              name,
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                                color: cs.onSurface,
+                              ),
+                            ),
                             subtitle: Text(
                               [
                                 "$start – $end",
                                 if (room.isNotEmpty) room,
                               ].join(" · "),
-                              style: const TextStyle(fontSize: 12),
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: cs.onSurfaceVariant,
+                              ),
                             ),
                             trailing: busy
                                 ? const SizedBox(

@@ -70,6 +70,51 @@ class DashboardService {
     }
   }
 
+  /// Indicadores agregados (receita loja, mensalidades, alunos, séries mensais).
+  /// `GET /dashboard/analytics` — query `months` opcional (ex.: 6 ou 12).
+  Future<Map<String, dynamic>> dashboardAnalytics({int? months}) async {
+    try {
+      final response = await dio.get(
+        '/dashboard/analytics',
+        queryParameters: {
+          ...?months != null ? {'months': months} : null,
+        },
+      );
+      final data = response.data;
+      if (data is Map<String, dynamic> && data['data'] is Map) {
+        return Map<String, dynamic>.from(data['data'] as Map);
+      }
+      return {};
+    } on DioException catch (e) {
+      throw _map(e, 'Falha ao carregar indicadores da academia.');
+    }
+  }
+
+  /// Registra contagem de alunos no dia (para série histórica no servidor).
+  /// `POST /dashboard/analytics/headcount` — corpo JSON; falha silenciosa se 404/405.
+  Future<bool> submitStudentHeadcountSnapshot({
+    required int activeStudents,
+    required int totalStudents,
+    DateTime? capturedAt,
+  }) async {
+    try {
+      final response = await dio.post(
+        '/dashboard/analytics/headcount',
+        data: {
+          'active_students': activeStudents,
+          'total_students': totalStudents,
+          'captured_at': (capturedAt ?? DateTime.now()).toUtc().toIso8601String(),
+        },
+      );
+      final code = response.statusCode ?? 0;
+      return code >= 200 && code < 300;
+    } on DioException catch (e) {
+      final c = e.response?.statusCode ?? 0;
+      if (c == 404 || c == 405 || c == 501) return false;
+      return false;
+    }
+  }
+
   Future<Map<String, dynamic>> dashboardSales({
     int? days,
     int topProductsLimit = 10,
@@ -78,7 +123,7 @@ class DashboardService {
       final response = await dio.get(
         "/dashboard/sales",
         queryParameters: {
-          if (days != null) "days": days,
+          ...?days != null ? {'days': days} : null,
           "top_products_limit": topProductsLimit,
         },
       );

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../core/graduacao/bjj_graduacao.dart';
+import '../../../core/theme/app_colors.dart';
 import '../../../core/auth/session_service.dart';
 import '../../../core/storage/token_storage.dart';
 import '../../../widgets/cached_auth_network_image.dart';
@@ -96,11 +97,11 @@ class _FeedPageState extends State<FeedPage> {
     return s.trim();
   }
 
-  Widget _buildFeedDescription(String desc) {
+  Widget _buildFeedDescription(BuildContext context, String desc) {
     final text = _normalizeDescription(desc);
     if (text.isEmpty) return const SizedBox.shrink();
-    const style = TextStyle(
-      color: Colors.white70,
+    final style = TextStyle(
+      color: Theme.of(context).colorScheme.onSurfaceVariant,
       height: 1.4,
       fontSize: 14.5,
     );
@@ -296,40 +297,46 @@ class _FeedPageState extends State<FeedPage> {
   void _openImageFullScreen(String imageUrl) {
     showDialog<void>(
       context: context,
-      barrierColor: Colors.black87,
-      builder: (ctx) => Dialog(
-        insetPadding: EdgeInsets.zero,
-        backgroundColor: Colors.black,
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            Center(
-              child: InteractiveViewer(
-                minScale: 0.6,
-                maxScale: 4,
-                child: SizedBox(
-                  width: MediaQuery.sizeOf(ctx).width,
-                  height: MediaQuery.sizeOf(ctx).height,
-                  child: CachedAuthNetworkImage(
-                    imageUrl: imageUrl,
-                    token: _token,
-                    fit: BoxFit.contain,
-                    memCacheWidth: 1600,
+      barrierColor: Theme.of(context).colorScheme.scrim.withValues(alpha: 0.88),
+      builder: (ctx) {
+        final dcs = Theme.of(ctx).colorScheme;
+        return Dialog(
+          insetPadding: EdgeInsets.zero,
+          backgroundColor: dcs.surfaceContainerLowest,
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              Center(
+                child: InteractiveViewer(
+                  minScale: 0.6,
+                  maxScale: 4,
+                  child: SizedBox(
+                    width: MediaQuery.sizeOf(ctx).width,
+                    height: MediaQuery.sizeOf(ctx).height,
+                    child: CachedAuthNetworkImage(
+                      imageUrl: imageUrl,
+                      token: _token,
+                      fit: BoxFit.contain,
+                      memCacheWidth: 1600,
+                    ),
                   ),
                 ),
               ),
-            ),
-            Positioned(
-              top: MediaQuery.paddingOf(ctx).top + 8,
-              right: 8,
-              child: IconButton(
-                icon: const Icon(Icons.close, color: Colors.white),
-                onPressed: () => Navigator.of(ctx).pop(),
+              Positioned(
+                top: MediaQuery.paddingOf(ctx).top + 8,
+                right: 8,
+                child: IconButton(
+                  icon: const Icon(Icons.close, color: AppPalette.onAccent),
+                  style: IconButton.styleFrom(
+                    backgroundColor: dcs.scrim.withValues(alpha: 0.45),
+                  ),
+                  onPressed: () => Navigator.of(ctx).pop(),
+                ),
               ),
-            ),
-          ],
-        ),
-      ),
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -618,7 +625,7 @@ class _FeedPageState extends State<FeedPage> {
                   onPressed: () => Navigator.pop(dialogContext, false),
                   child: const Text("Cancelar"),
                 ),
-                ElevatedButton(
+                FilledButton(
                   onPressed: () {
                     final title = titleController.text.trim();
                     if (title.isEmpty) {
@@ -746,6 +753,7 @@ class _FeedPageState extends State<FeedPage> {
               itemCount: items.length,
               separatorBuilder: (_, __) => const SizedBox(height: 12),
               itemBuilder: (context, index) {
+                final cs = Theme.of(context).colorScheme;
                 final item = items[index];
                 final postId = item["id"];
                 final title = (item["titulo"] ?? "").toString();
@@ -758,8 +766,11 @@ class _FeedPageState extends State<FeedPage> {
 
                 return Container(
                   decoration: BoxDecoration(
-                    color: const Color(0xFF1E1E1E),
+                    color: cs.surfaceContainerHigh,
                     borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: cs.outline.withValues(alpha: 0.15),
+                    ),
                   ),
                   padding: const EdgeInsets.all(12),
                   child: Column(
@@ -773,10 +784,17 @@ class _FeedPageState extends State<FeedPage> {
                               vertical: 4,
                             ),
                             decoration: BoxDecoration(
-                              color: const Color(0xFFD32F2F).withValues(alpha: 0.25),
+                              color: cs.primary.withValues(alpha: 0.14),
                               borderRadius: BorderRadius.circular(20),
                             ),
-                            child: Text(type.toUpperCase()),
+                            child: Text(
+                              type.toUpperCase(),
+                              style: TextStyle(
+                                color: cs.primary,
+                                fontWeight: FontWeight.w700,
+                                fontSize: 11,
+                              ),
+                            ),
                           ),
                           const Spacer(),
                           if (_isAdmin)
@@ -795,14 +813,15 @@ class _FeedPageState extends State<FeedPage> {
                       ),
                       Text(
                         title,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 17,
                           fontWeight: FontWeight.bold,
+                          color: cs.onSurface,
                         ),
                       ),
                       if (desc.isNotEmpty) ...[
                         const SizedBox(height: 6),
-                        _buildFeedDescription(desc),
+                        _buildFeedDescription(context, desc),
                       ],
                       if (imageUrl != null) ...[
                         const SizedBox(height: 10),
@@ -828,13 +847,13 @@ class _FeedPageState extends State<FeedPage> {
                                 Padding(
                                   padding: const EdgeInsets.all(8),
                                   child: Material(
-                                    color: Colors.black54,
+                                    color: cs.scrim.withValues(alpha: 0.45),
                                     borderRadius: BorderRadius.circular(8),
                                     child: const Padding(
                                       padding: EdgeInsets.all(6),
                                       child: Icon(
                                         Icons.open_in_new,
-                                        color: Colors.white,
+                                        color: AppPalette.onAccent,
                                         size: 20,
                                       ),
                                     ),
@@ -849,7 +868,7 @@ class _FeedPageState extends State<FeedPage> {
                             child: Text(
                               'Toque: abrir o link · Toque longo: ver imagem em tela cheia',
                               style: TextStyle(
-                                color: Colors.blue.shade200,
+                                color: cs.primary,
                                 fontSize: 12,
                               ),
                             ),
@@ -888,8 +907,9 @@ class _FeedPageState extends State<FeedPage> {
                               '$likes',
                               style: TextStyle(
                                 color: likes > 0
-                                    ? Colors.white70
-                                    : Colors.white38,
+                                    ? cs.onSurfaceVariant
+                                    : cs.onSurfaceVariant
+                                        .withValues(alpha: 0.5),
                               ),
                             ),
                           ),

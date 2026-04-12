@@ -62,12 +62,13 @@ class _GymSelectPageState extends State<GymSelectPage> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return PopScope(
       canPop: widget.barrierDismissible,
       child: Scaffold(
         appBar: AppBar(title: Text(widget.title)),
         body: _loading
-            ? const Center(child: CircularProgressIndicator())
+            ? Center(child: CircularProgressIndicator(color: cs.tertiary))
             : _error != null
                 ? Center(
                     child: Padding(
@@ -86,17 +87,17 @@ class _GymSelectPageState extends State<GymSelectPage> {
                     ),
                   )
                 : _rows.isEmpty
-                    ? const Center(
+                    ? Center(
                         child: Text(
                           "Nenhuma academia retornada pela API.",
-                          style: TextStyle(color: Colors.white54),
+                          style: TextStyle(color: cs.onSurfaceVariant),
                         ),
                       )
                     : ListView.separated(
                         padding: const EdgeInsets.all(16),
                         itemCount: _rows.length,
                         separatorBuilder: (_, _) => const SizedBox(height: 8),
-                        itemBuilder: (context, i) {
+                        itemBuilder: (ctx, i) {
                           final row = _rows[i];
                           final id = GymService.parseGymId(row);
                           final name = GymService.parseGymName(row);
@@ -104,13 +105,21 @@ class _GymSelectPageState extends State<GymSelectPage> {
                             return const SizedBox.shrink();
                           }
                           return Material(
-                            color: const Color(0xFF1E1E1E),
+                            color: Theme.of(ctx).colorScheme.surfaceContainerHigh,
                             borderRadius: BorderRadius.circular(12),
                             child: ListTile(
-                              title: Text(name),
+                              title: Text(
+                                name,
+                                style: TextStyle(
+                                  color: Theme.of(ctx).colorScheme.onSurface,
+                                ),
+                              ),
                               subtitle: Text(
                                 "ID $id",
-                                style: const TextStyle(fontSize: 12),
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Theme.of(ctx).colorScheme.onSurfaceVariant,
+                                ),
                               ),
                               trailing: const Icon(Icons.chevron_right),
                               onTap: () => _pick(id),

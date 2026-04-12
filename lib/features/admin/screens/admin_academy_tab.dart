@@ -1,9 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../../core/branding/app_branding.dart';
 import '../../gym_schedule/services/gym_schedule_service.dart';
-import '../../tenant/services/tenant_service.dart';
-import '../widgets/branding_color_row.dart';
 import 'admin_academy_modalities_tab.dart';
 
 const _weekdayChoices = <String>[
@@ -34,7 +31,7 @@ class AdminAcademyTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const DefaultTabController(
-      length: 3,
+      length: 2,
       child: _AdminAcademyTabBody(),
     );
   }
@@ -48,14 +45,7 @@ class _AdminAcademyTabBody extends StatefulWidget {
 }
 
 class _AdminAcademyTabBodyState extends State<_AdminAcademyTabBody> {
-  final _tenant = TenantService();
   final _schedule = GymScheduleService();
-
-  final _desc = TextEditingController();
-  final _corPri = TextEditingController();
-  final _corSec = TextEditingController();
-  final _corBg = TextEditingController();
-  final _logo = TextEditingController();
 
   List<Map<String, dynamic>> _classes = [];
   List<Map<String, dynamic>> _grouped = [];
@@ -70,34 +60,20 @@ class _AdminAcademyTabBodyState extends State<_AdminAcademyTabBody> {
     _reload();
   }
 
-  @override
-  void dispose() {
-    _desc.dispose();
-    _corPri.dispose();
-    _corSec.dispose();
-    _corBg.dispose();
-    _logo.dispose();
-    super.dispose();
-  }
-
   Future<void> _reload() async {
     setState(() {
       _loading = true;
       _error = null;
     });
     try {
-      final cfg = await _tenant.getTenantConfig();
-      final tenant = cfg["tenant"];
-      if (tenant is Map) {
-        final m = Map<String, dynamic>.from(tenant);
-        _desc.text = (m["public_description"] ?? "").toString();
-        _corPri.text = (m["cor_primaria"] ?? "").toString();
-        _corSec.text = (m["cor_secundaria"] ?? "").toString();
-        _corBg.text = (m["cor_background"] ?? "").toString();
-        _logo.text = (m["logo_url"] ?? "").toString();
-      }
-
       final classes = await _schedule.listGymClasses(activeOnly: false);
+      classes.sort(
+        (a, b) => (a['name'] ?? '')
+            .toString()
+            .toLowerCase()
+            .trim()
+            .compareTo((b['name'] ?? '').toString().toLowerCase().trim()),
+      );
       final grouped = await _schedule.listScheduleGrouped(activeOnly: false);
       List<Map<String, dynamic>> mods = [];
       try {
@@ -119,29 +95,6 @@ class _AdminAcademyTabBodyState extends State<_AdminAcademyTabBody> {
         _error = e.toString().replaceFirst("Exception: ", "");
         _loading = false;
       });
-    }
-  }
-
-  Future<void> _saveBranding() async {
-    try {
-      await _tenant.patchTenantBranding(
-        publicDescription: _desc.text,
-        corPrimaria: _corPri.text.trim().isEmpty ? null : _corPri.text.trim(),
-        corSecundaria:
-            _corSec.text.trim().isEmpty ? null : _corSec.text.trim(),
-        corBackground: _corBg.text.trim().isEmpty ? null : _corBg.text.trim(),
-        logoUrl: _logo.text.trim().isEmpty ? null : _logo.text.trim(),
-      );
-      await AppBrandingController.instance.refreshFromApi();
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Aparência salva. O app já usa a nova paleta.")),
-      );
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString().replaceFirst("Exception: ", ""))),
-      );
     }
   }
 
@@ -366,7 +319,7 @@ class _AdminAcademyTabBodyState extends State<_AdminAcademyTabBody> {
                   Text(
                     "Dias da semana",
                     style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.7),
+                      color: Theme.of(ctx).colorScheme.onSurfaceVariant,
                       fontSize: 13,
                     ),
                   ),
@@ -374,7 +327,10 @@ class _AdminAcademyTabBodyState extends State<_AdminAcademyTabBody> {
                   Text(
                     "Marque um ou mais. O mesmo horário será criado em cada dia.",
                     style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.45),
+                      color: Theme.of(ctx)
+                          .colorScheme
+                          .onSurfaceVariant
+                          .withValues(alpha: 0.75),
                       fontSize: 11,
                     ),
                   ),
@@ -539,10 +495,11 @@ class _AdminAcademyTabBodyState extends State<_AdminAcademyTabBody> {
 
   @override
   Widget build(BuildContext context) {
-    final primary = Theme.of(context).colorScheme.primary;
+    final cs = Theme.of(context).colorScheme;
+    final primary = cs.primary;
 
     if (_loading) {
-      return const Center(child: CircularProgressIndicator());
+      return Center(child: CircularProgressIndicator(color: cs.tertiary));
     }
     if (_error != null) {
       return Center(
@@ -563,15 +520,14 @@ class _AdminAcademyTabBodyState extends State<_AdminAcademyTabBody> {
     return Column(
       children: [
         Material(
-          color: const Color(0xFF1A1A1A),
+          color: cs.surfaceContainerHigh,
           child: TabBar(
-            labelColor: primary,
-            unselectedLabelColor: Colors.white54,
-            indicatorColor: primary,
+            labelColor: cs.onSurface,
+            unselectedLabelColor: cs.onSurfaceVariant,
+            indicatorColor: cs.tertiary,
             isScrollable: true,
             tabAlignment: TabAlignment.start,
             tabs: const [
-              Tab(text: "Aparência"),
               Tab(text: "Grade de aulas"),
               Tab(text: "Modalidades"),
             ],
@@ -580,58 +536,6 @@ class _AdminAcademyTabBodyState extends State<_AdminAcademyTabBody> {
         Expanded(
           child: TabBarView(
             children: [
-              ListView(
-                padding: const EdgeInsets.all(16),
-                children: [
-                  Text(
-                    "Texto e cores passam a orientar o tema do app (botões, destaques e vinheta sobre o fundo).",
-                    style: TextStyle(color: Colors.white.withValues(alpha: 0.65), fontSize: 13),
-                  ),
-                  const SizedBox(height: 16),
-                  TextField(
-                    controller: _desc,
-                    decoration: const InputDecoration(
-                      labelText: "Descrição pública (Sobre a academia)",
-                      alignLabelWithHint: true,
-                    ),
-                    maxLines: 6,
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: _logo,
-                    decoration: const InputDecoration(
-                      labelText: "URL do logo (opcional)",
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  BrandingColorRow(
-                    label: "Cor primária",
-                    helper: "Botões, destaques e indicadores.",
-                    controller: _corPri,
-                    fallbackColor: kDefaultBrandingPrimary,
-                  ),
-                  const SizedBox(height: 20),
-                  BrandingColorRow(
-                    label: "Cor secundária",
-                    helper: "Complementa a primária no tema.",
-                    controller: _corSec,
-                    fallbackColor: kDefaultBrandingSecondary,
-                  ),
-                  const SizedBox(height: 20),
-                  BrandingColorRow(
-                    label: "Cor de fundo / vinheta",
-                    helper: "Tom sobre o fundo escuro do app (opcional).",
-                    controller: _corBg,
-                    fallbackColor: kDefaultBrandingBackgroundHint,
-                  ),
-                  const SizedBox(height: 20),
-                  FilledButton.icon(
-                    onPressed: _saveBranding,
-                    icon: const Icon(Icons.palette_outlined),
-                    label: const Text("Salvar aparência"),
-                  ),
-                ],
-              ),
               RefreshIndicator(
                 onRefresh: _reload,
                 child: ListView(
@@ -656,11 +560,11 @@ class _AdminAcademyTabBodyState extends State<_AdminAcademyTabBody> {
                       ],
                     ),
                     if (_classes.isEmpty)
-                      const Padding(
-                        padding: EdgeInsets.only(bottom: 16),
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 16),
                         child: Text(
                           "Nenhuma aula. Toque em + para criar.",
-                          style: TextStyle(color: Colors.white54),
+                          style: TextStyle(color: cs.onSurfaceVariant),
                         ),
                       )
                     else
@@ -669,12 +573,18 @@ class _AdminAcademyTabBodyState extends State<_AdminAcademyTabBody> {
                         if (id == null) return const SizedBox.shrink();
                         final name = (c["name"] ?? "").toString();
                         return Card(
-                          color: const Color(0xFF1E1E1E),
+                          color: cs.surfaceContainerHigh,
                           child: ListTile(
-                            title: Text(name),
+                            title: Text(
+                              name,
+                              style: TextStyle(color: cs.onSurface),
+                            ),
                             subtitle: Text(
                               (c["instructor_name"] ?? "—").toString(),
-                              style: const TextStyle(fontSize: 12),
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: cs.onSurfaceVariant,
+                              ),
                             ),
                             trailing: Row(
                               mainAxisSize: MainAxisSize.min,
@@ -712,9 +622,9 @@ class _AdminAcademyTabBodyState extends State<_AdminAcademyTabBody> {
                       ],
                     ),
                     if (_grouped.isEmpty)
-                      const Text(
+                      Text(
                         "Sem horários. Use o ícone de agenda para adicionar.",
-                        style: TextStyle(color: Colors.white54),
+                        style: TextStyle(color: cs.onSurfaceVariant),
                       )
                     else
                       ..._grouped.map((day) {

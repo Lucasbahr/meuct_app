@@ -83,6 +83,7 @@ class _BirthdaysPageState extends State<BirthdaysPage> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     final today = _birthdayToday();
     final month = _birthdayMonth();
 
@@ -100,9 +101,13 @@ class _BirthdaysPageState extends State<BirthdaysPage> {
               : ListView(
                   padding: const EdgeInsets.all(16),
                   children: [
-                    const Text(
+                    Text(
                       "Aniversariantes de hoje",
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                        color: cs.onSurface,
+                      ),
                     ),
                     const SizedBox(height: 8),
                     if (today.isEmpty)
@@ -115,7 +120,6 @@ class _BirthdaysPageState extends State<BirthdaysPage> {
                         final b = _parseBirthDate(s);
                         final age = _calcAge(b);
                         return Card(
-                          color: const Color(0xFF1E1E1E),
                           child: ListTile(
                             title: Text((s["nome"] ?? "Sem nome").toString()),
                             subtitle: Text(
@@ -125,9 +129,13 @@ class _BirthdaysPageState extends State<BirthdaysPage> {
                         );
                       }),
                     const SizedBox(height: 14),
-                    const Text(
+                    Text(
                       "Aniversariantes do mês",
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                        color: cs.onSurface,
+                      ),
                     ),
                     const SizedBox(height: 8),
                     if (month.isEmpty)
@@ -140,7 +148,6 @@ class _BirthdaysPageState extends State<BirthdaysPage> {
                         final b = _parseBirthDate(s);
                         final age = _calcAge(b);
                         return Card(
-                          color: const Color(0xFF1E1E1E),
                           child: ListTile(
                             title: Text((s["nome"] ?? "Sem nome").toString()),
                             subtitle: Text(

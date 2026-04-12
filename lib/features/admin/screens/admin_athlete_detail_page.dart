@@ -54,6 +54,7 @@ Ultima luta: ${athlete["ultima_luta_em"] ?? "-"} (${athlete["ultima_luta_modalid
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     final birth = _parseBirthDate(
       athlete["data_nascimento"] ?? athlete["nascimento"] ?? athlete["birth_date"],
     );
@@ -82,24 +83,29 @@ Ultima luta: ${athlete["ultima_luta_em"] ?? "-"} (${athlete["ultima_luta_modalid
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: const Color(0xFF1E1E1E),
+              color: cs.surfaceContainerHigh,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.white24),
+              border: Border.all(
+                color: cs.outline.withValues(alpha: 0.3),
+              ),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const Text(
+                Text(
                   "Texto para WhatsApp",
                   style: TextStyle(
                     fontWeight: FontWeight.w700,
-                    color: Colors.white,
+                    color: cs.onSurface,
                   ),
                 ),
                 const SizedBox(height: 8),
                 SelectableText(
                   copyText,
-                  style: const TextStyle(color: Colors.white70, height: 1.4),
+                  style: TextStyle(
+                    color: cs.onSurfaceVariant,
+                    height: 1.4,
+                  ),
                 ),
                 const SizedBox(height: 10),
                 OutlinedButton.icon(
@@ -117,27 +123,31 @@ Ultima luta: ${athlete["ultima_luta_em"] ?? "-"} (${athlete["ultima_luta_modalid
             ),
           ),
           const SizedBox(height: 12),
-          _item("Nome", (athlete["nome"] ?? "-").toString()),
-          _item("Endereco", (athlete["endereco"] ?? "-").toString()),
-          _item("Modalidade", (athlete["modalidade"] ?? "-").toString()),
+          _item(context, "Nome", (athlete["nome"] ?? "-").toString()),
+          _item(context, "Endereco", (athlete["endereco"] ?? "-").toString()),
+          _item(context, "Modalidade", (athlete["modalidade"] ?? "-").toString()),
           _item(
+            context,
             "Graduacao",
             formatGraduacaoDisplay((athlete["graduacao"] ?? "").toString()),
           ),
           _item(
+            context,
             "Data nascimento",
             _formatDate(birth),
           ),
-          _item("Idade", age?.toString() ?? "-"),
-          _item("Cartel MMA", (athlete["cartel_mma"] ?? "-").toString()),
-          _item("Cartel Jiu", (athlete["cartel_jiu"] ?? "-").toString()),
-          _item("Cartel K1", (athlete["cartel_k1"] ?? "-").toString()),
+          _item(context, "Idade", age?.toString() ?? "-"),
+          _item(context, "Cartel MMA", (athlete["cartel_mma"] ?? "-").toString()),
+          _item(context, "Cartel Jiu", (athlete["cartel_jiu"] ?? "-").toString()),
+          _item(context, "Cartel K1", (athlete["cartel_k1"] ?? "-").toString()),
           _item(
+            context,
             "Nivel competicao",
             (athlete["nivel_competicao"] ?? "-").toString(),
           ),
-          _item("Tapology", (athlete["link_tapology"] ?? "-").toString()),
+          _item(context, "Tapology", (athlete["link_tapology"] ?? "-").toString()),
           _item(
+            context,
             "Ultima luta",
             "${athlete["ultima_luta_em"] ?? "-"} (${athlete["ultima_luta_modalidade"] ?? "-"})",
           ),
@@ -146,25 +156,35 @@ Ultima luta: ${athlete["ultima_luta_em"] ?? "-"} (${athlete["ultima_luta_modalid
     );
   }
 
-  Widget _item(String label, String value) {
+  Widget _item(BuildContext context, String label, String value) {
+    final cs = Theme.of(context).colorScheme;
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: const Color(0xFF1E1E1E),
+        color: cs.surfaceContainerHigh,
         borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: cs.outline.withValues(alpha: 0.22),
+        ),
       ),
       child: Row(
         children: [
           SizedBox(
             width: 140,
-            child: Text(label, style: const TextStyle(color: Colors.white70)),
+            child: Text(
+              label,
+              style: TextStyle(color: cs.onSurfaceVariant),
+            ),
           ),
           Expanded(
             child: Text(
               value,
               textAlign: TextAlign.right,
-              style: const TextStyle(fontWeight: FontWeight.w600),
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+                color: cs.onSurface,
+              ),
             ),
           ),
         ],

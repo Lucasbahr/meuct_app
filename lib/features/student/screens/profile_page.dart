@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:typed_data';
 import '../../../core/graduacao/bjj_graduacao.dart';
+import '../../../core/graduacao/graduation_palette.dart';
+import '../../../shared/components/primary_button.dart';
+import '../../../shared/themes/app_tokens.dart';
 import '../../../widgets/br_address_editor.dart';
 import '../services/student_service.dart';
 import '../services/checkin_service.dart';
@@ -18,6 +21,7 @@ class _ProfilePageState extends State<ProfilePage> {
   final _checkinService = CheckinService();
   Map<String, dynamic>? _student;
   int? _diasTreinados;
+  List<Map<String, dynamic>> _history = [];
   bool _isLoading = true;
   bool _isUploadingPhoto = false;
   bool _isSavingProfile = false;
@@ -86,10 +90,14 @@ class _ProfilePageState extends State<ProfilePage> {
         if (!mounted) return;
         setState(() {
           _diasTreinados = CheckinService.countDistinctTrainingDays(history);
+          _history = history;
         });
       } catch (_) {
         if (!mounted) return;
-        setState(() => _diasTreinados = null);
+        setState(() {
+          _diasTreinados = null;
+          _history = [];
+        });
       }
     } catch (e) {
       if (!mounted) return;
@@ -118,19 +126,24 @@ class _ProfilePageState extends State<ProfilePage> {
         _student = updated;
         _photoBytes = bytes;
       });
-      _showSnack("Foto atualizada com sucesso.");
+      _showSnack("Foto atualizada com sucesso.", ok: true);
     } catch (e) {
       _showSnack(
-        "Nao foi possivel enviar a foto. Verifique se a rota de upload existe no backend.",
+        "Não foi possível enviar a foto. Verifique se a rota de upload existe no backend.",
       );
     } finally {
       if (mounted) setState(() => _isUploadingPhoto = false);
     }
   }
 
-  void _showSnack(String message) {
+  void _showSnack(String message, {bool ok = false}) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: ok ? AppColors.success : null,
+      ),
+    );
   }
 
   String _enderecoExibicao() {
@@ -140,15 +153,13 @@ class _ProfilePageState extends State<ProfilePage> {
 
   Future<void> _saveProfile() async {
     if (_isSavingProfile) return;
-    // TextField só “confirma” o texto ao sair do foco; sem isso o último
-    // caractere pode não entrar em composeEndereco().
     FocusManager.instance.primaryFocus?.unfocus();
     await Future<void>.delayed(const Duration(milliseconds: 80));
     if (!mounted) return;
     final addressState = _addressKey.currentState;
     if (addressState == null) {
       _showSnack(
-        "Nao foi possivel ler o endereco. Toque em Cancelar e em Editar de novo.",
+        "Não foi possível ler o endereço. Toque em Cancelar e em Editar de novo.",
       );
       return;
     }
@@ -173,7 +184,7 @@ class _ProfilePageState extends State<ProfilePage> {
       await _loadProfile();
       if (!mounted) return;
       setState(() => _isEditing = false);
-      _showSnack("Dados atualizados com sucesso.");
+      _showSnack("Dados atualizados com sucesso.", ok: true);
     } catch (e) {
       _showSnack(e.toString().replaceFirst("Exception: ", ""));
     } finally {
@@ -181,50 +192,70 @@ class _ProfilePageState extends State<ProfilePage> {
     }
   }
 
+  List<Map<String, dynamic>> _sortedHistory() {
+    final list = List<Map<String, dynamic>>.from(_history);
+    list.sort((a, b) {
+      final da = DateTime.tryParse(a['date']?.toString() ?? '') ??
+          DateTime(1970);
+      final db = DateTime.tryParse(b['date']?.toString() ?? '') ??
+          DateTime(1970);
+      return db.compareTo(da);
+    });
+    return list.take(14).toList();
+  }
+
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return Scaffold(
-      appBar: AppBar(title: const Text("Meus dados")),
+      appBar: AppBar(
+        title: const Text('Meu perfil'),
+      ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? Center(child: CircularProgressIndicator(color: cs.tertiary))
           : _error != null
-              ? Center(child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Text(_error!, textAlign: TextAlign.center),
-                ))
+              ? Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(AppSpacing.md),
+                    child: Text(_error!, textAlign: TextAlign.center),
+                  ),
+                )
               : _student == null
-                  ? const Center(child: Text("Dados nao encontrados."))
+                  ? const Center(child: Text('Dados não encontrados.'))
                   : Stack(
                       children: [
                         ListView(
-                      padding: const EdgeInsets.all(16),
-                      children: [
-                        Center(
-                          child: Column(
-                            children: [
-                              CircleAvatar(
-                                radius: 44,
-                                backgroundColor: const Color(0xFF2A2A2A),
-                                    backgroundImage: _photoBytes != null
-                                        ? MemoryImage(_photoBytes!)
-                                        : null,
-                                    child: _photoBytes == null
-                                        ? const Icon(Icons.person, size: 42)
-                                        : null,
+                          padding: const EdgeInsets.all(AppSpacing.md),
+                          children: [
+                            _heroHeader(context),
+                            const SizedBox(height: AppSpacing.md),
+                            PrimaryButton(
+                              label: 'Ir para check-in',
+                              icon: Icons.how_to_reg_rounded,
+                              onPressed: () {
+                                final messenger = ScaffoldMessenger.of(context);
+                                Navigator.pop(context);
+                                messenger.showSnackBar(
+                                  const SnackBar(
+                                    content: Text(
+                                      'Na tela inicial, toque em "Registrar presença".',
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                            const SizedBox(height: AppSpacing.sm),
+                            Text(
+                              'Você volta ao início e abre a lista de presença em um toque.',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onSurface
+                                    .withValues(alpha: 0.55),
                               ),
-                              const SizedBox(height: 10),
-                              TextButton.icon(
-                                onPressed: _isUploadingPhoto ? null : _pickAndUploadPhoto,
-                                icon: const Icon(Icons.photo_camera_outlined),
-                                label: Text(
-                                  _isUploadingPhoto ? "Enviando..." : "Alterar foto",
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                            ],
-                          ),
-                        ),
-                            const SizedBox(height: 8),
+                            ),
+                            const SizedBox(height: AppSpacing.lg),
                             Row(
                               children: [
                                 Expanded(
@@ -240,13 +271,15 @@ class _ProfilePageState extends State<ProfilePage> {
                                               );
                                               _dataNascimentoController.text =
                                                   birth == null
-                                                  ? ""
-                                                  : _formatDateIso(birth);
+                                                      ? ""
+                                                      : _formatDateIso(birth);
                                             } else {
                                               _nomeController.text =
-                                                  (_student!["nome"] ?? "").toString();
+                                                  (_student!["nome"] ?? "")
+                                                      .toString();
                                               _telefoneController.text =
-                                                  (_student!["telefone"] ?? "").toString();
+                                                  (_student!["telefone"] ?? "")
+                                                      .toString();
                                               final birth = _parseBirthDate(
                                                 _student!["data_nascimento"],
                                               );
@@ -260,146 +293,45 @@ class _ProfilePageState extends State<ProfilePage> {
                                               );
                                             }
                                           },
-                                    icon: Icon(_isEditing ? Icons.close : Icons.edit),
-                                    label: Text(_isEditing ? "Cancelar" : "Editar dados"),
+                                    icon: Icon(
+                                        _isEditing ? Icons.close : Icons.edit),
+                                    label: Text(
+                                        _isEditing ? 'Cancelar' : 'Editar'),
                                   ),
                                 ),
                               ],
                             ),
-                            const SizedBox(height: 12),
-                            if (_isEditing) ...[
-                              TextField(
-                                controller: _nomeController,
-                                decoration: const InputDecoration(
-                                  labelText: "Nome",
-                                ),
-                              ),
-                              const SizedBox(height: 12),
-                              TextField(
-                                controller: _telefoneController,
-                                decoration: const InputDecoration(
-                                  labelText: "Telefone",
-                                ),
-                              ),
-                              const SizedBox(height: 12),
-                              InputDecorator(
-                                decoration: const InputDecoration(
-                                  labelText: "Graduação",
-                                  helperText:
-                                      "Definida pela equipe; não pode ser alterada aqui.",
-                                ),
-                                child: Text(
-                                  graduationLabelFromStudent(_student!),
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(height: 12),
-                              BrAddressEditor(
-                                key: _addressKey,
-                                studentSnapshot: Map<String, dynamic>.from(
-                                  _student!,
-                                ),
-                              ),
-                              const SizedBox(height: 12),
-                              TextField(
-                                controller: _dataNascimentoController,
-                                readOnly: true,
-                                decoration: const InputDecoration(
-                                  labelText: "Data de nascimento",
-                                  suffixIcon: Icon(Icons.calendar_month),
-                                ),
-                                onTap: () async {
-                                  final current = _parseBirthDate(
-                                        _student?["data_nascimento"],
-                                      ) ??
-                                      DateTime(2000, 1, 1);
-                                  final picked = await showDatePicker(
-                                    context: context,
-                                    initialDate: current,
-                                    firstDate: DateTime(1930, 1, 1),
-                                    lastDate: DateTime.now(),
-                                  );
-                                  if (picked == null) return;
-                                  _dataNascimentoController.text =
-                                      _formatDateIso(picked);
-                                },
-                              ),
-                              const SizedBox(height: 16),
-                              SizedBox(
-                                width: double.infinity,
-                                child: ElevatedButton(
-                                  onPressed: (_isSavingProfile || _isUploadingPhoto)
-                                      ? null
-                                      : _saveProfile,
-                                  child: _isSavingProfile
-                                      ? const Row(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.center,
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            SizedBox(
-                                              width: 20,
-                                              height: 20,
-                                              child: CircularProgressIndicator(
-                                                strokeWidth: 2,
-                                                color: Colors.white,
-                                              ),
-                                            ),
-                                            SizedBox(width: 12),
-                                            Text("SALVANDO..."),
-                                          ],
-                                        )
-                                      : const Text("SALVAR"),
-                                ),
-                              ),
-                              const SizedBox(height: 12),
-                            ],
-                            if (!_isEditing) ...[
-                              _item("Nome", (_student!["nome"] ?? "-").toString()),
-                              _item(
-                                  "Telefone", (_student!["telefone"] ?? "-").toString()),
-                              _item("Endereco", _enderecoExibicao()),
-                              _item(
-                                  "Modalidade", modalityLabelFromStudent(_student!)),
-                              _item(
-                                "Graduacao",
-                                graduationLabelFromStudent(_student!),
-                              ),
-                              _item("Status", (_student!["status"] ?? "-").toString()),
-                              if (_diasTreinados != null)
-                                _item(
-                                  "Dias treinados",
-                                  "${_diasTreinados!} dia${_diasTreinados == 1 ? "" : "s"} com presença",
-                                ),
-                              _item(
-                                "Data de nascimento",
-                                _formatDate(
-                                  _parseBirthDate(_student!["data_nascimento"]),
-                                ),
-                              ),
-                            ],
-                      ],
-                    ),
+                            const SizedBox(height: AppSpacing.md),
+                            if (_isEditing) ..._editForm() else ..._readOnly(),
+                          ],
+                        ),
                         if (_isSavingProfile)
                           Positioned.fill(
                             child: AbsorbPointer(
                               child: DecoratedBox(
                                 decoration: BoxDecoration(
-                                  color: Colors.black.withValues(alpha: 0.45),
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .scrim
+                                      .withValues(alpha: 0.35),
                                 ),
-                                child: const Center(
+                                child: Center(
                                   child: Column(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      CircularProgressIndicator(),
-                                      SizedBox(height: 16),
+                                      CircularProgressIndicator(
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .tertiary,
+                                      ),
+                                      const SizedBox(height: 16),
                                       Text(
-                                        "Salvando dados...",
+                                        'Salvando...',
                                         style: TextStyle(
-                                          color: Colors.white,
                                           fontWeight: FontWeight.w600,
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .onSurface,
                                         ),
                                       ),
                                     ],
@@ -413,27 +345,333 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  Widget _item(String label, String value) {
+  Widget _heroHeader(BuildContext context) {
+    final nome = (_student!['nome'] ?? '').toString().trim();
+    final gradRaw = _student!['graduacao']?.toString() ?? '';
+    final grad = graduationLabelFromStudent(_student!);
+    final belt = graduationAccentColor(gradRaw.isNotEmpty ? gradRaw : grad);
+    final cs = Theme.of(context).colorScheme;
+    final primary = cs.primary;
+
     return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
-        color: const Color(0xFF1E1E1E),
-        borderRadius: BorderRadius.circular(12),
+        color: cs.surface,
+        borderRadius: BorderRadius.circular(AppRadii.card + 4),
+        border: Border.all(
+          color: cs.outline.withValues(alpha: 0.1),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: cs.shadow.withValues(alpha: 0.08),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
+          ),
+        ],
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      child: Column(
         children: [
-          Text(label, style: const TextStyle(color: Colors.white70)),
-          const SizedBox(width: 16),
+          Stack(
+            alignment: Alignment.bottomRight,
+            children: [
+              CircleAvatar(
+                radius: 48,
+                backgroundColor: primary.withValues(alpha: 0.1),
+                backgroundImage:
+                    _photoBytes != null ? MemoryImage(_photoBytes!) : null,
+                child: _photoBytes == null
+                    ? Text(
+                        _initials(nome),
+                        style: TextStyle(
+                          fontSize: 28,
+                          fontWeight: FontWeight.w800,
+                          color: primary,
+                        ),
+                      )
+                    : null,
+              ),
+              Material(
+                color: cs.surface,
+                shape: const CircleBorder(),
+                elevation: 2,
+                child: IconButton(
+                  tooltip: 'Alterar foto',
+                  onPressed: _isUploadingPhoto ? null : _pickAndUploadPhoto,
+                  icon: _isUploadingPhoto
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.photo_camera_outlined, size: 20),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.md),
+          Text(
+            nome.isEmpty ? 'Aluno' : nome,
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(fontSize: 24),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.md,
+              vertical: AppSpacing.sm,
+            ),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  belt.withValues(alpha: 0.2),
+                  belt.withValues(alpha: 0.08),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(AppRadii.card),
+              border: Border.all(color: belt.withValues(alpha: 0.35)),
+            ),
+            child: Text(
+              grad,
+              style: TextStyle(
+                fontWeight: FontWeight.w800,
+                fontSize: 15,
+                color: belt.computeLuminance() > 0.55
+                    ? cs.onSurface
+                    : belt,
+              ),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          Wrap(
+            spacing: AppSpacing.sm,
+            runSpacing: AppSpacing.sm,
+            alignment: WrapAlignment.center,
+            children: [
+              _chip(
+                Icons.verified_rounded,
+                (_student!['status'] ?? '—').toString(),
+                cs.primary,
+              ),
+              if (_diasTreinados != null)
+                _chip(
+                  Icons.local_fire_department_outlined,
+                  '$_diasTreinados dia${_diasTreinados == 1 ? '' : 's'} treinados',
+                  AppColors.success,
+                ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
+              'Histórico recente de presença',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          if (_sortedHistory().isEmpty)
+            Text(
+              'Nenhum check-in registrado ainda.',
+              style: TextStyle(color: cs.onSurfaceVariant),
+            )
+          else
+            ..._sortedHistory().map((e) => _historyRow(context, e)),
+        ],
+      ),
+    );
+  }
+
+  Widget _historyRow(BuildContext context, Map<String, dynamic> e) {
+    final total = (e['total'] as num?)?.toInt() ?? 0;
+    final ok = total > 0;
+    final cs = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+      child: Row(
+        children: [
+          Container(
+            width: 10,
+            height: 10,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: ok
+                  ? AppColors.success
+                  : cs.onSurfaceVariant.withValues(alpha: 0.35),
+            ),
+          ),
+          const SizedBox(width: AppSpacing.sm),
           Expanded(
             child: Text(
-              value,
-              textAlign: TextAlign.right,
-              style: const TextStyle(fontWeight: FontWeight.w600),
+              e['date']?.toString() ?? '',
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+                color: cs.onSurface,
+              ),
+            ),
+          ),
+          Text(
+            ok ? '$total' : '—',
+            style: TextStyle(
+              color: ok ? AppColors.success : cs.onSurfaceVariant,
+              fontWeight: FontWeight.w700,
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _chip(IconData icon, String text, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.sm,
+        vertical: 6,
+      ),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: color.withValues(alpha: 0.25)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 16, color: color),
+          const SizedBox(width: 6),
+          Text(
+            text,
+            style: TextStyle(
+              fontWeight: FontWeight.w600,
+              fontSize: 12,
+              color: color,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _initials(String name) {
+    final list =
+        name.trim().split(RegExp(r'\s+')).where((e) => e.isNotEmpty).toList();
+    if (list.isEmpty) return '?';
+    if (list.length == 1) {
+      final p = list.first;
+      if (p.length >= 2) return p.substring(0, 2).toUpperCase();
+      return p.toUpperCase();
+    }
+    return ('${list.first[0]}${list.last[0]}').toUpperCase();
+  }
+
+  List<Widget> _editForm() {
+    return [
+      TextField(
+        controller: _nomeController,
+        decoration: const InputDecoration(labelText: 'Nome'),
+      ),
+      const SizedBox(height: AppSpacing.md),
+      TextField(
+        controller: _telefoneController,
+        decoration: const InputDecoration(labelText: 'Telefone'),
+      ),
+      const SizedBox(height: AppSpacing.md),
+      InputDecorator(
+        decoration: const InputDecoration(
+          labelText: 'Graduação',
+          helperText: 'Definida pela equipe; não pode ser alterada aqui.',
+        ),
+        child: Text(
+          graduationLabelFromStudent(_student!),
+          style: const TextStyle(fontWeight: FontWeight.w600),
+        ),
+      ),
+      const SizedBox(height: AppSpacing.md),
+      BrAddressEditor(
+        key: _addressKey,
+        studentSnapshot: Map<String, dynamic>.from(_student!),
+      ),
+      const SizedBox(height: AppSpacing.md),
+      TextField(
+        controller: _dataNascimentoController,
+        readOnly: true,
+        decoration: const InputDecoration(
+          labelText: 'Data de nascimento',
+          suffixIcon: Icon(Icons.calendar_month),
+        ),
+        onTap: () async {
+          final current =
+              _parseBirthDate(_student?["data_nascimento"]) ?? DateTime(2000, 1, 1);
+          final picked = await showDatePicker(
+            context: context,
+            initialDate: current,
+            firstDate: DateTime(1930, 1, 1),
+            lastDate: DateTime.now(),
+          );
+          if (picked == null) return;
+          _dataNascimentoController.text = _formatDateIso(picked);
+        },
+      ),
+      const SizedBox(height: AppSpacing.lg),
+      PrimaryButton(
+        label: 'Salvar alterações',
+        loading: _isSavingProfile,
+        onPressed: (_isSavingProfile || _isUploadingPhoto) ? null : _saveProfile,
+      ),
+    ];
+  }
+
+  List<Widget> _readOnly() {
+    return [
+      _tile('Telefone', (_student!['telefone'] ?? '-').toString()),
+      _tile('Endereço', _enderecoExibicao()),
+      _tile('Modalidade', modalityLabelFromStudent(_student!)),
+      _tile('Graduação', graduationLabelFromStudent(_student!)),
+      _tile('Status', (_student!['status'] ?? '-').toString()),
+      _tile(
+        'Data de nascimento',
+        _formatDate(_parseBirthDate(_student!['data_nascimento'])),
+      ),
+    ];
+  }
+
+  Widget _tile(String label, String value) {
+    final cs = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+      child: Container(
+        padding: const EdgeInsets.all(AppSpacing.md),
+        decoration: BoxDecoration(
+          color: cs.surface,
+          borderRadius: BorderRadius.circular(AppRadii.card),
+          border: Border.all(
+            color: cs.outline.withValues(alpha: 0.1),
+          ),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SizedBox(
+              width: 108,
+              child: Text(
+                label,
+                style: TextStyle(
+                  color: cs.onSurfaceVariant,
+                  fontSize: 13,
+                ),
+              ),
+            ),
+            Expanded(
+              child: Text(
+                value,
+                textAlign: TextAlign.right,
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 15,
+                  color: cs.onSurface,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

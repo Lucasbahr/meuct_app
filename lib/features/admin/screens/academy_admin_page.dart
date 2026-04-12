@@ -54,7 +54,7 @@ class _AcademyAdminPageState extends State<AcademyAdminPage> {
 
   @override
   Widget build(BuildContext context) {
-    final accent = Theme.of(context).colorScheme.primary;
+    final cs = Theme.of(context).colorScheme;
 
     return DefaultTabController(
       length: 6,
@@ -70,7 +70,7 @@ class _AcademyAdminPageState extends State<AcademyAdminPage> {
                 style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w400,
-                  color: Colors.white.withValues(alpha: 0.55),
+                  color: cs.onSurfaceVariant,
                 ),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
@@ -86,10 +86,10 @@ class _AcademyAdminPageState extends State<AcademyAdminPage> {
           ],
           bottom: TabBar(
             isScrollable: true,
-            dividerColor: Colors.white.withValues(alpha: 0.08),
-            indicatorColor: accent,
-            labelColor: Colors.white,
-            unselectedLabelColor: Colors.white54,
+            dividerColor: cs.outline.withValues(alpha: 0.25),
+            indicatorColor: cs.tertiary,
+            labelColor: cs.onSurface,
+            unselectedLabelColor: cs.onSurfaceVariant,
             labelPadding: const EdgeInsets.symmetric(horizontal: 10),
             splashBorderRadius: BorderRadius.circular(8),
             tabAlignment: TabAlignment.start,

@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
+
+import '../../../shared/themes/app_button_styles.dart';
 import '../services/admin_service.dart';
+import '../widgets/admin_shell.dart';
 import 'admin_edit_student_page.dart';
 import 'admin_student_detail_page.dart';
 import '../widgets/register_student_attendance.dart';
-
-const _kAccent = Color(0xFFE53935);
-const _kCardBg = Color(0xFF1A1A1A);
 
 class AdminStudentsTab extends StatefulWidget {
   final AdminService service;
@@ -46,6 +46,13 @@ class _AdminStudentsTabState extends State<AdminStudentsTab> {
     });
     try {
       final students = await widget.service.getStudents();
+      students.sort(
+        (a, b) => (a['nome'] ?? '')
+            .toString()
+            .toLowerCase()
+            .trim()
+            .compareTo((b['nome'] ?? '').toString().toLowerCase().trim()),
+      );
       List<Map<String, dynamic>> ranking = [];
       try {
         ranking = await widget.service.getRanking();
@@ -173,24 +180,27 @@ class _AdminStudentsTabState extends State<AdminStudentsTab> {
     return t.substring(0, 1).toUpperCase();
   }
 
-  Widget _metaChip(String label, {IconData? icon}) {
+  Widget _metaChip(BuildContext context, String label, {IconData? icon}) {
+    final cs = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: 0.35),
+        color: cs.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white12),
+        border: Border.all(
+          color: cs.outline.withValues(alpha: 0.35),
+        ),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           if (icon != null) ...[
-            Icon(icon, size: 14, color: Colors.white54),
+            Icon(icon, size: 14, color: cs.onSurfaceVariant),
             const SizedBox(width: 4),
           ],
           Text(
             label,
-            style: const TextStyle(fontSize: 11, color: Colors.white70),
+            style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant),
           ),
         ],
       ),
@@ -198,6 +208,7 @@ class _AdminStudentsTabState extends State<AdminStudentsTab> {
   }
 
   Widget _studentCard(Map<String, dynamic> s) {
+    final cs = Theme.of(context).colorScheme;
     final nome = (s["nome"] ?? "Sem nome").toString();
     final eAtleta = (s["e_atleta"] ?? false) == true;
     final sid = _idOf(s);
@@ -210,19 +221,22 @@ class _AdminStudentsTabState extends State<AdminStudentsTab> {
     final age = _calcAge(birth);
 
     final chips = <Widget>[
-      _metaChip(status, icon: Icons.flag_outlined),
-      if (dias != null) _metaChip("$dias dias de treino", icon: Icons.calendar_today_outlined),
-      if (pres != null) _metaChip("$pres presenças", icon: Icons.how_to_reg_outlined),
+      _metaChip(context, status, icon: Icons.flag_outlined),
+      if (dias != null)
+        _metaChip(context, "$dias dias de treino",
+            icon: Icons.calendar_today_outlined),
+      if (pres != null)
+        _metaChip(context, "$pres presenças", icon: Icons.how_to_reg_outlined),
       if (eAtleta) ...[
-        _metaChip("Atleta", icon: Icons.sports_mma),
-        _metaChip("${age ?? "—"} anos", icon: Icons.cake_outlined),
+        _metaChip(context, "Atleta", icon: Icons.sports_mma),
+        _metaChip(context, "${age ?? "—"} anos", icon: Icons.cake_outlined),
       ],
     ];
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Material(
-        color: _kCardBg,
+        color: cs.surfaceContainerHigh,
         borderRadius: BorderRadius.circular(16),
         clipBehavior: Clip.antiAlias,
         child: InkWell(
@@ -240,7 +254,9 @@ class _AdminStudentsTabState extends State<AdminStudentsTab> {
           child: Container(
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.white10),
+              border: Border.all(
+                color: cs.outline.withValues(alpha: 0.3),
+              ),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -252,11 +268,11 @@ class _AdminStudentsTabState extends State<AdminStudentsTab> {
                     children: [
                       CircleAvatar(
                         radius: 26,
-                        backgroundColor: const Color(0xFF2C2C2C),
+                        backgroundColor: cs.surfaceContainerHighest,
                         child: Text(
                           _initials(nome),
-                          style: const TextStyle(
-                            color: _kAccent,
+                          style: TextStyle(
+                            color: cs.tertiary,
                             fontWeight: FontWeight.w800,
                             fontSize: 16,
                           ),
@@ -272,10 +288,11 @@ class _AdminStudentsTabState extends State<AdminStudentsTab> {
                                 Expanded(
                                   child: Text(
                                     nome,
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontWeight: FontWeight.w700,
                                       fontSize: 16,
                                       letterSpacing: -0.2,
+                                      color: cs.onSurface,
                                     ),
                                   ),
                                 ),
@@ -291,8 +308,8 @@ class _AdminStudentsTabState extends State<AdminStudentsTab> {
                               const SizedBox(height: 4),
                               Text(
                                 (s['email'] ?? '').toString(),
-                                style: const TextStyle(
-                                  color: Colors.white54,
+                                style: TextStyle(
+                                  color: cs.onSurfaceVariant,
                                   fontSize: 12,
                                 ),
                               ),
@@ -309,13 +326,13 @@ class _AdminStudentsTabState extends State<AdminStudentsTab> {
                     ],
                   ),
                 ),
-                const Divider(height: 1, color: Colors.white10),
+                Divider(height: 1, color: cs.outline.withValues(alpha: 0.35)),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                   child: Row(
                     children: [
                       if (sid != null)
-                        TextButton.icon(
+                        FilledButton.icon(
                           onPressed: checkinBusy
                               ? null
                               : () => registerStudentAttendance(
@@ -334,14 +351,34 @@ class _AdminStudentsTabState extends State<AdminStudentsTab> {
                                     },
                                   ),
                           icon: checkinBusy
-                              ? const SizedBox(
+                              ? SizedBox(
                                   width: 18,
                                   height: 18,
-                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: cs.onTertiary,
+                                  ),
                                 )
-                              : const Icon(Icons.check_circle_outline, size: 20),
-                          label: const Text("Check-in"),
-                          style: TextButton.styleFrom(foregroundColor: _kAccent),
+                              : const Icon(Icons.how_to_reg_rounded, size: 18),
+                          label: const Text('Check-in'),
+                          style: AppButtonStyles.tertiaryAccentFilled(cs).merge(
+                            ButtonStyle(
+                              padding: WidgetStateProperty.all(
+                                const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 8,
+                                ),
+                              ),
+                              minimumSize:
+                                  WidgetStateProperty.all(const Size(0, 36)),
+                              textStyle: WidgetStateProperty.all(
+                                const TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
+                          ),
                         ),
                       const Spacer(),
                       TextButton.icon(
@@ -387,8 +424,11 @@ class _AdminStudentsTabState extends State<AdminStudentsTab> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     if (_isLoading) {
-      return const Center(child: CircularProgressIndicator(color: _kAccent));
+      return Center(
+        child: CircularProgressIndicator(color: cs.tertiary),
+      );
     }
     if (_error != null) {
       return Center(
@@ -397,19 +437,26 @@ class _AdminStudentsTabState extends State<AdminStudentsTab> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.cloud_off_outlined, size: 48, color: Colors.white.withValues(alpha: 0.35)),
+              Icon(
+                Icons.cloud_off_outlined,
+                size: 48,
+                color: cs.onSurfaceVariant.withValues(alpha: 0.45),
+              ),
               const SizedBox(height: 16),
               Text(
                 _error!.replaceFirst("Exception: ", ""),
                 textAlign: TextAlign.center,
-                style: const TextStyle(color: Colors.white70, height: 1.4),
+                style: TextStyle(
+                  color: cs.onSurfaceVariant,
+                  height: 1.4,
+                ),
               ),
               const SizedBox(height: 20),
               FilledButton.icon(
                 onPressed: _load,
                 icon: const Icon(Icons.refresh),
                 label: const Text("Tentar novamente"),
-                style: FilledButton.styleFrom(backgroundColor: _kAccent),
+                style: AdminPanelStyle.filledPrimary(context),
               ),
             ],
           ),
@@ -420,7 +467,7 @@ class _AdminStudentsTabState extends State<AdminStudentsTab> {
     final list = _filteredStudents();
 
     return RefreshIndicator(
-      color: _kAccent,
+      color: cs.tertiary,
       onRefresh: _load,
       child: CustomScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
@@ -437,43 +484,50 @@ class _AdminStudentsTabState extends State<AdminStudentsTab> {
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         colors: [
-                          _kAccent.withValues(alpha: 0.18),
+                          cs.tertiary.withValues(alpha: 0.14),
                           Colors.transparent,
                         ],
                         begin: Alignment.centerLeft,
                         end: Alignment.centerRight,
                       ),
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: Colors.white10),
+                      border: Border.all(
+                        color: cs.outline.withValues(alpha: 0.28),
+                      ),
                     ),
                     child: Row(
                       children: [
                         Container(
                           padding: const EdgeInsets.all(10),
                           decoration: BoxDecoration(
-                            color: _kAccent.withValues(alpha: 0.2),
+                            color: cs.tertiary.withValues(alpha: 0.18),
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          child: const Icon(Icons.groups_outlined, color: _kAccent, size: 26),
+                          child: Icon(
+                            Icons.groups_outlined,
+                            color: cs.tertiary,
+                            size: 26,
+                          ),
                         ),
                         const SizedBox(width: 14),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text(
+                              Text(
                                 "Gestão da academia",
                                 style: TextStyle(
                                   fontSize: 18,
                                   fontWeight: FontWeight.w800,
                                   letterSpacing: -0.3,
+                                  color: cs.onSurface,
                                 ),
                               ),
                               const SizedBox(height: 4),
                               Text(
                                 "${list.length} ${_students.length == list.length ? "membros" : "resultados"} · ${_students.length} no total",
-                                style: const TextStyle(
-                                  color: Colors.white60,
+                                style: TextStyle(
+                                  color: cs.onSurfaceVariant,
                                   fontSize: 13,
                                 ),
                               ),
@@ -487,26 +541,41 @@ class _AdminStudentsTabState extends State<AdminStudentsTab> {
                   TextField(
                     controller: _searchController,
                     onChanged: (_) => setState(() {}),
-                    style: const TextStyle(fontSize: 15),
+                    style: TextStyle(fontSize: 15, color: cs.onSurface),
                     decoration: InputDecoration(
                       filled: true,
-                      fillColor: _kCardBg,
+                      fillColor: cs.surfaceContainerHigh,
                       hintText: "Buscar por nome ou e-mail",
-                      hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.35)),
-                      prefixIcon: const Icon(Icons.search, color: Colors.white54),
+                      hintStyle: TextStyle(
+                        color: cs.onSurfaceVariant.withValues(alpha: 0.55),
+                      ),
+                      prefixIcon: Icon(
+                        Icons.search,
+                        color: cs.onSurfaceVariant,
+                      ),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(14),
-                        borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.12)),
+                        borderSide: BorderSide(
+                          color: cs.outline.withValues(alpha: 0.35),
+                        ),
                       ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(14),
-                        borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.12)),
+                        borderSide: BorderSide(
+                          color: cs.outline.withValues(alpha: 0.35),
+                        ),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(14),
-                        borderSide: const BorderSide(color: _kAccent, width: 1.2),
+                        borderSide: BorderSide(
+                          color: cs.tertiary,
+                          width: 1.5,
+                        ),
                       ),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 14,
+                      ),
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -516,12 +585,18 @@ class _AdminStudentsTabState extends State<AdminStudentsTab> {
                         label: const Text("Todos"),
                         selected: !_onlyAthletes,
                         onSelected: (_) => setState(() => _onlyAthletes = false),
-                        selectedColor: _kAccent.withValues(alpha: 0.35),
+                        selectedColor: cs.tertiary.withValues(alpha: 0.28),
                         labelStyle: TextStyle(
-                          color: !_onlyAthletes ? Colors.white : Colors.white70,
-                          fontWeight: !_onlyAthletes ? FontWeight.w600 : FontWeight.normal,
+                          color: !_onlyAthletes
+                              ? cs.onTertiary
+                              : cs.onSurfaceVariant,
+                          fontWeight: !_onlyAthletes
+                              ? FontWeight.w600
+                              : FontWeight.normal,
                         ),
-                        side: const BorderSide(color: Colors.white24),
+                        side: BorderSide(
+                          color: cs.outline.withValues(alpha: 0.45),
+                        ),
                         showCheckmark: false,
                       ),
                       const SizedBox(width: 10),
@@ -529,12 +604,18 @@ class _AdminStudentsTabState extends State<AdminStudentsTab> {
                         label: const Text("Só atletas"),
                         selected: _onlyAthletes,
                         onSelected: (_) => setState(() => _onlyAthletes = true),
-                        selectedColor: _kAccent.withValues(alpha: 0.35),
+                        selectedColor: cs.tertiary.withValues(alpha: 0.28),
                         labelStyle: TextStyle(
-                          color: _onlyAthletes ? Colors.white : Colors.white70,
-                          fontWeight: _onlyAthletes ? FontWeight.w600 : FontWeight.normal,
+                          color: _onlyAthletes
+                              ? cs.onTertiary
+                              : cs.onSurfaceVariant,
+                          fontWeight: _onlyAthletes
+                              ? FontWeight.w600
+                              : FontWeight.normal,
                         ),
-                        side: const BorderSide(color: Colors.white24),
+                        side: BorderSide(
+                          color: cs.outline.withValues(alpha: 0.45),
+                        ),
                         showCheckmark: false,
                       ),
                     ],
@@ -551,7 +632,7 @@ class _AdminStudentsTabState extends State<AdminStudentsTab> {
                   _students.isEmpty
                       ? "Nenhum membro cadastrado."
                       : "Nenhum resultado para o filtro.",
-                  style: const TextStyle(color: Colors.white54),
+                  style: TextStyle(color: cs.onSurfaceVariant),
                 ),
               ),
             )

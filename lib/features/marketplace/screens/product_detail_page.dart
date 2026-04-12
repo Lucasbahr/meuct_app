@@ -18,6 +18,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     final p = widget.product;
     final name = (p["name"] ?? "Produto").toString();
     final desc = (p["description"] ?? "").toString().trim();
@@ -42,9 +43,12 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                   placeholder: (_, _) => const Center(
                     child: CircularProgressIndicator(strokeWidth: 2),
                   ),
-                  errorWidget: (_, _, _) => const ColoredBox(
-                    color: Color(0xFF2A2A2A),
-                    child: Icon(Icons.broken_image, color: Colors.white24),
+                  errorWidget: (_, _, _) => ColoredBox(
+                    color: cs.surfaceContainerHighest,
+                    child: Icon(
+                      Icons.broken_image,
+                      color: cs.onSurfaceVariant.withValues(alpha: 0.45),
+                    ),
                   ),
                 ),
               ),
@@ -53,27 +57,27 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
             Container(
               height: 200,
               decoration: BoxDecoration(
-                color: const Color(0xFF2A2A2A),
+                color: cs.surfaceContainerHighest,
                 borderRadius: BorderRadius.circular(16),
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.inventory_2_outlined,
                 size: 64,
-                color: Colors.white24,
+                color: cs.onSurfaceVariant.withValues(alpha: 0.45),
               ),
             ),
           const SizedBox(height: 16),
           Text(
             "R\$ $price",
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 22,
               fontWeight: FontWeight.bold,
-              color: Color(0xFFE53935),
+              color: cs.primary,
             ),
           ),
           if (desc.isNotEmpty) ...[
             const SizedBox(height: 12),
-            Text(desc, style: const TextStyle(color: Colors.white70)),
+            Text(desc, style: TextStyle(color: cs.onSurfaceVariant)),
           ],
           const SizedBox(height: 24),
           if (!active)
@@ -84,13 +88,19 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
           else ...[
             Row(
               children: [
-                const Text("Quantidade", style: TextStyle(color: Colors.white70)),
+                Text(
+                  "Quantidade",
+                  style: TextStyle(color: cs.onSurfaceVariant),
+                ),
                 const Spacer(),
                 IconButton(
                   onPressed: _qty > 1 ? () => setState(() => _qty--) : null,
                   icon: const Icon(Icons.remove_circle_outline),
                 ),
-                Text("$_qty", style: const TextStyle(fontSize: 18)),
+                Text(
+                  "$_qty",
+                  style: TextStyle(fontSize: 18, color: cs.onSurface),
+                ),
                 IconButton(
                   onPressed: () => setState(() => _qty++),
                   icon: const Icon(Icons.add_circle_outline),

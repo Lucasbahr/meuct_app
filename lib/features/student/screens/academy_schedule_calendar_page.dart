@@ -106,9 +106,9 @@ class _AcademyScheduleCalendarPageState
     final extra = count > maxDots ? count - maxDots : 0;
     final colors = [
       primary,
-      primary.withValues(alpha: 0.75),
-      const Color(0xFF26A69A),
-      const Color(0xFFFFB74D),
+      primary.withValues(alpha: 0.72),
+      primary.withValues(alpha: 0.48),
+      primary.withValues(alpha: 0.32),
     ];
     return Padding(
       padding: const EdgeInsets.only(top: 2),
@@ -145,7 +145,8 @@ class _AcademyScheduleCalendarPageState
 
   @override
   Widget build(BuildContext context) {
-    final primary = Theme.of(context).colorScheme.primary;
+    final cs = Theme.of(context).colorScheme;
+    final primary = cs.primary;
     final today = dateOnly(DateTime.now());
     final grid = monthCalendarGrid(_month);
 
@@ -192,9 +193,10 @@ class _AcademyScheduleCalendarPageState
                       Center(
                         child: Text(
                           "${_mesesPt[_month.month - 1]} ${_month.year}",
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 20,
                             fontWeight: FontWeight.w800,
+                            color: cs.onSurface,
                           ),
                         ),
                       ),
@@ -202,9 +204,11 @@ class _AcademyScheduleCalendarPageState
                       Container(
                         padding: const EdgeInsets.fromLTRB(8, 12, 8, 12),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF1E1E1E),
+                          color: cs.surfaceContainerHigh,
                           borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: Colors.white10),
+                          border: Border.all(
+                            color: cs.outline.withValues(alpha: 0.25),
+                          ),
                         ),
                         child: Column(
                           children: [
@@ -218,9 +222,7 @@ class _AcademyScheduleCalendarPageState
                                       style: TextStyle(
                                         fontSize: 11,
                                         fontWeight: FontWeight.w600,
-                                        color: Colors.white.withValues(
-                                          alpha: 0.55,
-                                        ),
+                                        color: cs.onSurfaceVariant,
                                       ),
                                     ),
                                   ),
@@ -263,14 +265,16 @@ class _AcademyScheduleCalendarPageState
                                                   ? primary.withValues(
                                                       alpha: 0.45,
                                                     )
-                                                  : Colors.white12,
+                                                  : cs.outline
+                                                      .withValues(alpha: 0.28),
                                           width: sel ? 2 : 1,
                                         ),
                                         color: sel
                                             ? primary.withValues(alpha: 0.14)
                                             : isToday
                                                 ? primary.withValues(alpha: 0.06)
-                                                : Colors.black26,
+                                                : cs.surfaceContainerHighest
+                                                    .withValues(alpha: 0.65),
                                       ),
                                       padding: const EdgeInsets.symmetric(
                                         vertical: 4,
@@ -286,8 +290,8 @@ class _AcademyScheduleCalendarPageState
                                               fontWeight: FontWeight.w800,
                                               fontSize: 13,
                                               color: sel
-                                                  ? Colors.white
-                                                  : Colors.white70,
+                                                  ? cs.onSurface
+                                                  : cs.onSurfaceVariant,
                                             ),
                                           ),
                                           _dayIndicators(n, primary),
@@ -310,9 +314,10 @@ class _AcademyScheduleCalendarPageState
                             child: Text(
                               "Aulas em ${_selected.day.toString().padLeft(2, '0')}/"
                               "${_selected.month.toString().padLeft(2, '0')}/${_selected.year}",
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontWeight: FontWeight.w700,
                                 fontSize: 16,
+                                color: cs.onSurface,
                               ),
                             ),
                           ),
@@ -323,20 +328,21 @@ class _AcademyScheduleCalendarPageState
                         "Cada ponto no calendário indica aulas naquele dia da semana "
                         "(repetem todas as semanas). Toque em outro dia para ver os horários.",
                         style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.5),
+                          color: cs.onSurfaceVariant,
                           fontSize: 12,
                           height: 1.35,
                         ),
                       ),
                       const SizedBox(height: 14),
-                      ..._buildDaySlotList(primary),
+                      ..._buildDaySlotList(context, primary),
                     ],
                   ),
                 ),
     );
   }
 
-  List<Widget> _buildDaySlotList(Color primary) {
+  List<Widget> _buildDaySlotList(BuildContext context, Color primary) {
+    final cs = Theme.of(context).colorScheme;
     final slots = _slotsForDay(_selected);
     if (slots.isEmpty) {
       return [
@@ -346,7 +352,7 @@ class _AcademyScheduleCalendarPageState
             child: Text(
               "Nenhuma aula na grade para ${_diasSemanaPt[apiScheduleWeekday(_selected)]}.",
               textAlign: TextAlign.center,
-              style: const TextStyle(color: Colors.white54),
+              style: TextStyle(color: cs.onSurfaceVariant),
             ),
           ),
         ),
@@ -366,9 +372,8 @@ class _AcademyScheduleCalendarPageState
 
       return Padding(
         padding: const EdgeInsets.only(bottom: 10),
-        child: Material(
-          color: const Color(0xFF252525),
-          borderRadius: BorderRadius.circular(14),
+        child: Card(
+          margin: EdgeInsets.zero,
           child: Padding(
             padding: const EdgeInsets.all(14),
             child: Row(
@@ -398,9 +403,10 @@ class _AcademyScheduleCalendarPageState
                       const SizedBox(height: 4),
                       Text(
                         name,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontWeight: FontWeight.w600,
                           fontSize: 16,
+                          color: cs.onSurface,
                         ),
                       ),
                       if (inst.isNotEmpty || room.isNotEmpty) ...[
@@ -410,8 +416,8 @@ class _AcademyScheduleCalendarPageState
                             if (inst.isNotEmpty) "Prof. $inst",
                             if (room.isNotEmpty) room,
                           ].join(" · "),
-                          style: const TextStyle(
-                            color: Colors.white54,
+                          style: TextStyle(
+                            color: cs.onSurfaceVariant,
                             fontSize: 13,
                           ),
                         ),

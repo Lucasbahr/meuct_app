@@ -60,6 +60,7 @@ class _SalesDashboardPageState extends State<SalesDashboardPage> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return Scaffold(
       appBar: AppBar(title: const Text("Vendas (loja)")),
       body: Column(
@@ -77,13 +78,16 @@ class _SalesDashboardPageState extends State<SalesDashboardPage> {
           ),
           Expanded(
             child: RefreshIndicator(
+              color: cs.tertiary,
               onRefresh: _load,
               child: _loading
                   ? ListView(
                       physics: const AlwaysScrollableScrollPhysics(),
-                      children: const [
-                        SizedBox(height: 120),
-                        Center(child: CircularProgressIndicator()),
+                      children: [
+                        const SizedBox(height: 120),
+                        Center(
+                          child: CircularProgressIndicator(color: cs.tertiary),
+                        ),
                       ],
                     )
                   : _error != null
@@ -93,7 +97,7 @@ class _SalesDashboardPageState extends State<SalesDashboardPage> {
                           children: [
                             Text(
                               _error!,
-                              style: const TextStyle(color: Colors.white70),
+                              style: TextStyle(color: cs.onSurfaceVariant),
                             ),
                             const SizedBox(height: 16),
                             FilledButton(
@@ -105,7 +109,7 @@ class _SalesDashboardPageState extends State<SalesDashboardPage> {
                       : ListView(
                           padding: const EdgeInsets.all(16),
                           children: [
-                            if (_data != null) ..._build(_data!),
+                            if (_data != null) ..._build(context, _data!),
                           ],
                         ),
             ),
@@ -115,30 +119,34 @@ class _SalesDashboardPageState extends State<SalesDashboardPage> {
     );
   }
 
-  List<Widget> _build(Map<String, dynamic> d) {
+  List<Widget> _build(BuildContext context, Map<String, dynamic> d) {
+    final cs = Theme.of(context).colorScheme;
     final top = d["top_products"];
     final byDay = d["sales_by_day"];
 
     return [
       Text(
         "Período: ${d["period_start"] ?? ""} → ${d["period_end_exclusive"] ?? ""}",
-        style: const TextStyle(color: Colors.white54, fontSize: 12),
+        style: TextStyle(color: cs.onSurfaceVariant, fontSize: 12),
       ),
       const SizedBox(height: 12),
       Wrap(
         spacing: 10,
         runSpacing: 10,
         children: [
-          _chip("Vendas", _money(d["total_sales"])),
-          _chip("Pedidos", "${d["total_orders"] ?? 0}"),
-          _chip("Ticket médio", _money(d["average_ticket"])),
-          _chip("Comissão", _money(d["total_commission"])),
+          _chip(context, "Vendas", _money(d["total_sales"])),
+          _chip(context, "Pedidos", "${d["total_orders"] ?? 0}"),
+          _chip(context, "Ticket médio", _money(d["average_ticket"])),
+          _chip(context, "Comissão", _money(d["total_commission"])),
         ],
       ),
       const SizedBox(height: 24),
-      const Text(
+      Text(
         "Produtos mais vendidos",
-        style: TextStyle(fontWeight: FontWeight.w600),
+        style: TextStyle(
+          fontWeight: FontWeight.w600,
+          color: cs.onSurface,
+        ),
       ),
       const SizedBox(height: 8),
       if (top is List && top.isNotEmpty)
@@ -146,21 +154,28 @@ class _SalesDashboardPageState extends State<SalesDashboardPage> {
           if (raw is! Map) return const SizedBox.shrink();
           final m = Map<String, dynamic>.from(raw);
           return Card(
-            color: const Color(0xFF1E1E1E),
+            color: cs.surfaceContainerHigh,
             child: ListTile(
-              title: Text(m["name"]?.toString() ?? ""),
+              title: Text(
+                m["name"]?.toString() ?? "",
+                style: TextStyle(color: cs.onSurface),
+              ),
               subtitle: Text(
                 "${m["units_sold"] ?? 0} un. · ${_money(m["revenue"])}",
+                style: TextStyle(color: cs.onSurfaceVariant),
               ),
             ),
           );
         })
       else
-        const Text("Sem dados.", style: TextStyle(color: Colors.white54)),
+        Text("Sem dados.", style: TextStyle(color: cs.onSurfaceVariant)),
       const SizedBox(height: 20),
-      const Text(
+      Text(
         "Vendas por dia",
-        style: TextStyle(fontWeight: FontWeight.w600),
+        style: TextStyle(
+          fontWeight: FontWeight.w600,
+          color: cs.onSurface,
+        ),
       ),
       const SizedBox(height: 8),
       if (byDay is List && byDay.isNotEmpty)
@@ -175,35 +190,64 @@ class _SalesDashboardPageState extends State<SalesDashboardPage> {
                   flex: 2,
                   child: Text(
                     m["date"]?.toString() ?? "—",
-                    style: const TextStyle(fontSize: 12),
+                    style: TextStyle(fontSize: 12, color: cs.onSurface),
                   ),
                 ),
-                Text("${m["orders"] ?? 0} ped."),
+                Text(
+                  "${m["orders"] ?? 0} ped.",
+                  style: TextStyle(color: cs.onSurfaceVariant),
+                ),
                 const SizedBox(width: 12),
-                Text(_money(m["sales"])),
+                Text(
+                  _money(m["sales"]),
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    color: cs.onSurface,
+                  ),
+                ),
               ],
             ),
           );
         })
       else
-        const Text("—", style: TextStyle(color: Colors.white38)),
+        Text(
+          "—",
+          style: TextStyle(
+            color: cs.onSurfaceVariant.withValues(alpha: 0.65),
+          ),
+        ),
     ];
   }
 
-  Widget _chip(String label, String value) {
+  Widget _chip(BuildContext context, String label, String value) {
+    final cs = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: const Color(0xFF252525),
+        color: cs.surfaceContainerHigh,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white10),
+        border: Border.all(
+          color: cs.outline.withValues(alpha: 0.28),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: const TextStyle(color: Colors.white54, fontSize: 11)),
+          Text(
+            label,
+            style: TextStyle(
+              color: cs.onSurfaceVariant,
+              fontSize: 11,
+            ),
+          ),
           const SizedBox(height: 4),
-          Text(value, style: const TextStyle(fontWeight: FontWeight.bold)),
+          Text(
+            value,
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: cs.onSurface,
+            ),
+          ),
         ],
       ),
     );

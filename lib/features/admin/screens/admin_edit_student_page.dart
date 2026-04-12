@@ -1,9 +1,55 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import '../../../core/graduacao/bjj_graduacao.dart';
 import '../../../widgets/br_address_editor.dart';
 import '../../../widgets/loading_overlay.dart';
+import '../../gym_schedule/services/gym_schedule_service.dart';
 import '../services/admin_service.dart';
+
+int? _modalityRowId(Map<String, dynamic> m) {
+  final id = m['id'] ?? m['modality_id'] ?? m['modalityId'];
+  if (id is int) return id;
+  if (id is num) return id.toInt();
+  return int.tryParse(id?.toString() ?? '');
+}
+
+String _modalityRowName(Map<String, dynamic> m) {
+  for (final k in ['nome', 'name', 'titulo', 'title']) {
+    final v = m[k];
+    if (v is String && v.trim().isNotEmpty) return v.trim();
+  }
+  return '';
+}
+
+int? _studentModalityIdFromMap(Map<String, dynamic> student) {
+  final raw = student['modality_id'] ?? student['modalityId'];
+  if (raw is int) return raw;
+  if (raw is num) return raw.toInt();
+  return int.tryParse(raw?.toString() ?? '');
+}
+
+Map<String, dynamic>? _firstStudentModalityMap(Map<String, dynamic> student) {
+  final raw = student['modalities'];
+  if (raw is! List || raw.isEmpty) return null;
+  for (final e in raw) {
+    if (e is Map) return Map<String, dynamic>.from(e);
+  }
+  return null;
+}
+
+int? _graduationRowId(Map<String, dynamic> g) {
+  final id = g['id'];
+  if (id is int) return id;
+  if (id is num) return id.toInt();
+  return int.tryParse(id?.toString() ?? '');
+}
+
+String _graduationRowName(Map<String, dynamic> g) {
+  for (final k in ['nome', 'name', 'graduation_name']) {
+    final v = g[k];
+    if (v is String && v.trim().isNotEmpty) return v.trim();
+  }
+  return '';
+}
 
 class AdminEditStudentPage extends StatefulWidget {
   final AdminService service;
@@ -41,7 +87,14 @@ class _AdminEditStudentPageState extends State<AdminEditStudentPage> {
   bool _isSaving = false;
   String _blockingLabel = 'Aguarde...';
   String? _error;
-  late String _graduacaoSelecionada;
+
+  final _schedule = GymScheduleService();
+  List<Map<String, dynamic>> _modalidades = [];
+  bool _modalidadesLoading = true;
+  int? _selectedModalityId;
+  List<Map<String, dynamic>> _graduacoes = [];
+  bool _graduationsLoading = false;
+  int? _selectedGraduationId;
 
   int? get _studentId {
     final id = widget.student["id"];
@@ -58,9 +111,6 @@ class _AdminEditStudentPageState extends State<AdminEditStudentPage> {
     _nomeController.text = (widget.student["nome"] ?? "").toString();
     _telefoneController.text = (widget.student["telefone"] ?? "").toString();
     _modalidadeController.text = (widget.student["modalidade"] ?? "").toString();
-    _graduacaoSelecionada = graduacaoSelecionavelInicial(
-      widget.student["graduacao"]?.toString(),
-    );
     _statusController.text = (widget.student["status"] ?? "").toString();
     _tempoTreinoController.text =
         (widget.student["tempo_de_treino"] ?? "").toString();
@@ -78,6 +128,143 @@ class _AdminEditStudentPageState extends State<AdminEditStudentPage> {
     _ultimaLutaModalidadeController.text = (widget.student["ultima_luta_modalidade"] ??
             "")
         .toString();
+    _loadModalidadesDaAcademia();
+  }
+
+  Future<void> _loadModalidadesDaAcademia() async {
+    try {
+      final list = await _schedule.listModalidades();
+      if (!mounted) return;
+      list.sort(
+        (a, b) => _modalityRowName(a).toLowerCase().compareTo(
+              _modalityRowName(b).toLowerCase(),
+            ),
+      );
+      var id = _studentModalityIdFromMap(widget.student);
+      final sm = _firstStudentModalityMap(widget.student);
+      if (id == null && sm != null) {
+        final mid = sm['modality_id'];
+        if (mid is int) {
+          id = mid;
+        } else if (mid is num) {
+          id = mid.toInt();
+        } else {
+          id = int.tryParse(mid?.toString() ?? '');
+        }
+      }
+      final nomeAtual = _modalidadeController.text.trim();
+      if (id == null && nomeAtual.isNotEmpty) {
+        for (final m in list) {
+          if (_modalityRowName(m).toLowerCase() == nomeAtual.toLowerCase()) {
+            id = _modalityRowId(m);
+            break;
+          }
+        }
+      }
+      if (id != null && !list.any((m) => _modalityRowId(m) == id)) {
+        id = null;
+      }
+      if (id != null) {
+        final row = list.firstWhere((m) => _modalityRowId(m) == id);
+        _modalidadeController.text = _modalityRowName(row);
+      }
+
+      int? initialGid;
+      if (sm != null) {
+        final gid = sm['graduation_id'];
+        if (gid is int) {
+          initialGid = gid;
+        } else if (gid is num) {
+          initialGid = gid.toInt();
+        } else {
+          initialGid = int.tryParse(gid?.toString() ?? '');
+        }
+      }
+
+      setState(() {
+        _modalidades = list;
+        _selectedModalityId = id;
+        _modalidadesLoading = false;
+      });
+
+      await _loadGraduacoesForModality(id, preferGraduationId: initialGid);
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _modalidades = [];
+        _selectedModalityId = null;
+        _modalidadesLoading = false;
+        _graduacoes = [];
+        _selectedGraduationId = null;
+      });
+    }
+  }
+
+  Future<void> _loadGraduacoesForModality(
+    int? modalityId, {
+    int? preferGraduationId,
+  }) async {
+    if (modalityId == null) {
+      if (!mounted) return;
+      setState(() {
+        _graduacoes = [];
+        _selectedGraduationId = null;
+        _graduationsLoading = false;
+      });
+      return;
+    }
+    if (!mounted) return;
+    setState(() => _graduationsLoading = true);
+    try {
+      final list = await _schedule.listGraduacoes(modalidadeId: modalityId);
+      if (!mounted) return;
+      list.sort((a, b) {
+        final la = _intOrdemGraduacao(a);
+        final lb = _intOrdemGraduacao(b);
+        if (la != lb) return la.compareTo(lb);
+        return _graduationRowName(a).toLowerCase().compareTo(
+              _graduationRowName(b).toLowerCase(),
+            );
+      });
+      int? gid = preferGraduationId;
+      if (gid != null && !list.any((g) => _graduationRowId(g) == gid)) {
+        gid = null;
+      }
+      gid ??= list.isEmpty ? null : _graduationRowId(list.first);
+      setState(() {
+        _graduacoes = list;
+        _selectedGraduationId = gid;
+        _graduationsLoading = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _graduacoes = [];
+        _selectedGraduationId = null;
+        _graduationsLoading = false;
+      });
+    }
+  }
+
+  int _intOrdemGraduacao(Map<String, dynamic> g) {
+    final v = g['ordem'] ?? g['level'] ?? g['graduation_level'];
+    if (v is int) return v;
+    if (v is num) return v.toInt();
+    return int.tryParse(v?.toString() ?? '') ?? 0;
+  }
+
+  int? get _modalityDropdownValue {
+    final id = _selectedModalityId;
+    if (id == null) return null;
+    final ok = _modalidades.any((m) => _modalityRowId(m) == id);
+    return ok ? id : null;
+  }
+
+  int? get _graduationDropdownValue {
+    final id = _selectedGraduationId;
+    if (id == null) return null;
+    final ok = _graduacoes.any((g) => _graduationRowId(g) == id);
+    return ok ? id : null;
   }
 
   @override
@@ -129,11 +316,6 @@ class _AdminEditStudentPageState extends State<AdminEditStudentPage> {
     return _dateToIso(parsed);
   }
 
-  String _graduacaoDropdownValue() {
-    final items = graduacoesDropdownItens(valorAtual: _graduacaoSelecionada);
-    return alignGraduacaoDropdownValue(_graduacaoSelecionada, items);
-  }
-
   /// API aceita só `amador` | `profissional` (StudentUpdate / Literal).
   String? _cleanNivelCompeticao(TextEditingController c) {
     final v = c.text.trim().toLowerCase();
@@ -144,19 +326,13 @@ class _AdminEditStudentPageState extends State<AdminEditStudentPage> {
 
   Map<String, dynamic> _buildPayload() {
     final enderecoLine = _addressKey.currentState?.composeEndereco().trim();
-    // StudentAdminUpdate não tem `email` e usa extra=forbid → enviar "email" gera 422.
-    // Só enviar chaves com valor: evita mandar null em tudo e sobrescrever campos no backend.
+    // StudentAdminUpdate: `extra=forbid` — não enviar `modalidade`/`graduacao` (strings).
+    // Inscrição: `modality_id` + `graduation_id` (processados no backend em student_modalities).
     final map = <String, dynamic>{
       "nome": _cleanString(_nomeController),
       "telefone": _cleanString(_telefoneController),
       "endereco":
           (enderecoLine == null || enderecoLine.isEmpty) ? null : enderecoLine,
-      "modalidade": _cleanString(_modalidadeController),
-      "graduacao": () {
-        final g = _graduacaoSelecionada.trim();
-        final c = canonicalGraduacaoBjj(g);
-        return c ?? (g.isEmpty ? graduacaoInicialAluno : g);
-      }(),
       "status": _cleanString(_statusController),
       "e_atleta": _eAtleta,
       "tempo_de_treino": _cleanInt(_tempoTreinoController),
@@ -169,6 +345,10 @@ class _AdminEditStudentPageState extends State<AdminEditStudentPage> {
       "ultima_luta_em": _normalizeDate(_ultimaLutaEmController),
       "ultima_luta_modalidade": _cleanString(_ultimaLutaModalidadeController),
     };
+    if (_selectedModalityId != null && _selectedGraduationId != null) {
+      map["modality_id"] = _selectedModalityId;
+      map["graduation_id"] = _selectedGraduationId;
+    }
     map.removeWhere((_, v) => v == null);
     return map;
   }
@@ -196,6 +376,14 @@ class _AdminEditStudentPageState extends State<AdminEditStudentPage> {
           });
           return;
         }
+      }
+      if (_selectedModalityId != null && _selectedGraduationId == null) {
+        setState(() {
+          _isSaving = false;
+          _error =
+              'Selecione a graduação desta modalidade (carregue a lista ou escolha outra modalidade).';
+        });
+        return;
       }
       await widget.service.updateStudent(id, _buildPayload());
       if (!mounted) return;
@@ -249,6 +437,172 @@ class _AdminEditStudentPageState extends State<AdminEditStudentPage> {
     } finally {
       if (mounted) setState(() => _isSaving = false);
     }
+  }
+
+  Widget _buildModalityField(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    if (_modalidadesLoading) {
+      return InputDecorator(
+        decoration: const InputDecoration(
+          labelText: 'Modalidade',
+        ),
+        child: Row(
+          children: [
+            SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: cs.tertiary,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Text(
+              'Carregando modalidades…',
+              style: TextStyle(color: cs.onSurfaceVariant, fontSize: 14),
+            ),
+          ],
+        ),
+      );
+    }
+    if (_modalidades.isEmpty) {
+      return TextField(
+        controller: _modalidadeController,
+        decoration: const InputDecoration(
+          labelText: 'Modalidade',
+          helperText:
+              'Nenhuma modalidade retornada pela API. Cadastre em Painel → Academia.',
+        ),
+      );
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        DropdownButtonFormField<int?>(
+          value: _modalityDropdownValue,
+          decoration: const InputDecoration(
+            labelText: 'Modalidade da academia',
+            helperText: 'Somente modalidades já cadastradas para o tenant.',
+          ),
+          items: [
+            const DropdownMenuItem<int?>(
+              value: null,
+              child: Text('Outro (texto livre)'),
+            ),
+            ..._modalidades.expand((m) {
+              final id = _modalityRowId(m);
+              if (id == null) return <DropdownMenuItem<int?>>[];
+              return [
+                DropdownMenuItem<int?>(
+                  value: id,
+                  child: Text(_modalityRowName(m)),
+                ),
+              ];
+            }),
+          ],
+          onChanged: (v) {
+            setState(() {
+              _selectedModalityId = v;
+              if (v != null) {
+                final row = _modalidades.firstWhere((m) => _modalityRowId(m) == v);
+                _modalidadeController.text = _modalityRowName(row);
+              }
+            });
+            _loadGraduacoesForModality(v);
+          },
+        ),
+        if (_modalityDropdownValue == null) ...[
+          const SizedBox(height: 8),
+          TextField(
+            controller: _modalidadeController,
+            decoration: InputDecoration(
+              labelText: 'Nome da modalidade',
+              helperText:
+                  'Use só se não houver opção na lista. Prefira cadastrar em Academia.',
+              helperStyle: TextStyle(
+                fontSize: 12,
+                color: cs.onSurfaceVariant,
+              ),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildGraduationField(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final mid = _modalityDropdownValue;
+    if (mid == null) {
+      return InputDecorator(
+        decoration: const InputDecoration(
+          labelText: 'Graduação na modalidade',
+          helperText: 'Escolha uma modalidade na lista acima para carregar as graduações.',
+        ),
+        child: Text(
+          '—',
+          style: TextStyle(color: cs.onSurfaceVariant, fontSize: 14),
+        ),
+      );
+    }
+    if (_graduationsLoading) {
+      return InputDecorator(
+        decoration: const InputDecoration(
+          labelText: 'Graduação',
+        ),
+        child: Row(
+          children: [
+            SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: cs.tertiary,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Text(
+              'Carregando graduações…',
+              style: TextStyle(color: cs.onSurfaceVariant, fontSize: 14),
+            ),
+          ],
+        ),
+      );
+    }
+    if (_graduacoes.isEmpty) {
+      return InputDecorator(
+        decoration: InputDecoration(
+          labelText: 'Graduação',
+          helperText:
+              'Nenhuma graduação para esta modalidade. Cadastre em Painel → Academia → Modalidades.',
+          helperStyle: TextStyle(color: cs.error.withValues(alpha: 0.9)),
+        ),
+        child: Text(
+          'Sem opções',
+          style: TextStyle(color: cs.onSurfaceVariant, fontSize: 14),
+        ),
+      );
+    }
+    return DropdownButtonFormField<int?>(
+      value: _graduationDropdownValue,
+      decoration: const InputDecoration(
+        labelText: 'Graduação na modalidade',
+        helperText:
+            'Obrigatório para salvar a inscrição. Cartel K1/MMA é só registro de lutas, independente da faixa aqui.',
+      ),
+      items: _graduacoes.expand((g) {
+        final id = _graduationRowId(g);
+        if (id == null) return <DropdownMenuItem<int?>>[];
+        return [
+          DropdownMenuItem<int?>(
+            value: id,
+            child: Text(_graduationRowName(g).isEmpty ? '#$id' : _graduationRowName(g)),
+          ),
+        ];
+      }).toList(),
+      onChanged: (v) => setState(() => _selectedGraduationId = v),
+    );
   }
 
   @override
@@ -319,29 +673,11 @@ class _AdminEditStudentPageState extends State<AdminEditStudentPage> {
                 ),
                 SizedBox(
                   width: 320,
-                  child: TextField(
-                    controller: _modalidadeController,
-                    decoration: const InputDecoration(labelText: "Modalidade"),
-                  ),
+                  child: _buildModalityField(context),
                 ),
                 SizedBox(
                   width: 320,
-                  child: DropdownButtonFormField<String>(
-                    value: _graduacaoDropdownValue(),
-                    decoration: const InputDecoration(labelText: "Graduação"),
-                    items: graduacoesDropdownItens(valorAtual: _graduacaoSelecionada)
-                        .map(
-                          (g) => DropdownMenuItem<String>(
-                            value: g,
-                            child: Text(formatGraduacaoDisplay(g)),
-                          ),
-                        )
-                        .toList(),
-                    onChanged: (v) {
-                      if (v == null) return;
-                      setState(() => _graduacaoSelecionada = v);
-                    },
-                  ),
+                  child: _buildGraduationField(context),
                 ),
                 SizedBox(
                   width: 320,
@@ -528,7 +864,7 @@ class _AdminEditStudentPageState extends State<AdminEditStudentPage> {
               spacing: 12,
               runSpacing: 12,
               children: [
-                ElevatedButton.icon(
+                FilledButton.icon(
                   onPressed: _isSaving ? null : _save,
                   icon: const Icon(Icons.save),
                   label: Text(_isSaving ? "Salvando..." : "Salvar"),

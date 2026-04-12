@@ -69,6 +69,7 @@ class _GamificationPageState extends State<GamificationPage> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return Scaffold(
       appBar: AppBar(title: const Text("Gamificação")),
       body: RefreshIndicator(
@@ -86,7 +87,10 @@ class _GamificationPageState extends State<GamificationPage> {
                     physics: const AlwaysScrollableScrollPhysics(),
                     padding: const EdgeInsets.all(24),
                     children: [
-                      Text(_error!, style: const TextStyle(color: Colors.white70)),
+                      Text(
+                        _error!,
+                        style: TextStyle(color: cs.onSurfaceVariant),
+                      ),
                       const SizedBox(height: 16),
                       FilledButton(onPressed: _load, child: const Text("Tentar novamente")),
                     ],
@@ -94,11 +98,11 @@ class _GamificationPageState extends State<GamificationPage> {
                 : ListView(
                     padding: const EdgeInsets.all(16),
                     children: [
-                      if (_gami != null) ..._buildGami(_gami!),
+                      if (_gami != null) ..._buildGami(context, _gami!),
                       if (_progress.any((p) => p["eligible"] == true)) ...[
                         const SizedBox(height: 12),
                         Material(
-                          color: const Color(0xFF2A2418),
+                          color: cs.primaryContainer,
                           borderRadius: BorderRadius.circular(12),
                           child: InkWell(
                             borderRadius: BorderRadius.circular(12),
@@ -108,21 +112,21 @@ class _GamificationPageState extends State<GamificationPage> {
                               padding: const EdgeInsets.all(14),
                               child: Row(
                                 children: [
-                                  const Icon(Icons.school_outlined,
-                                      color: Color(0xFFE53935)),
+                                  Icon(Icons.school_outlined, color: cs.primary),
                                   const SizedBox(width: 12),
-                                  const Expanded(
+                                  Expanded(
                                     child: Text(
                                       "Você está elegível para graduação. Toque para solicitar agendamento.",
                                       style: TextStyle(
                                         fontSize: 13,
                                         height: 1.35,
+                                        color: cs.onSurface,
                                       ),
                                     ),
                                   ),
                                   Icon(
                                     Icons.chevron_right,
-                                    color: Colors.white.withValues(alpha: 0.5),
+                                    color: cs.onSurfaceVariant,
                                   ),
                                 ],
                               ),
@@ -131,38 +135,39 @@ class _GamificationPageState extends State<GamificationPage> {
                         ),
                       ],
                       const SizedBox(height: 20),
-                      const Text(
+                      Text(
                         "Progresso por modalidade",
                         style: TextStyle(
                           fontWeight: FontWeight.w600,
-                          color: Colors.white70,
+                          color: cs.onSurface,
                         ),
                       ),
                       const SizedBox(height: 10),
                       if (_progress.isEmpty)
-                        const Text(
+                        Text(
                           "Nenhuma modalidade vinculada ainda.",
-                          style: TextStyle(color: Colors.white54),
+                          style: TextStyle(color: cs.onSurfaceVariant),
                         )
                       else
-                        ..._progress.map(_progressTile),
+                        ..._progress.map((p) => _progressTile(context, p)),
                     ],
                   ),
       ),
     );
   }
 
-  List<Widget> _buildGami(Map<String, dynamic> g) {
+  List<Widget> _buildGami(BuildContext context, Map<String, dynamic> g) {
+    final cs = Theme.of(context).colorScheme;
     final badges = g["badges"];
     return [
       Row(
         children: [
           Expanded(
-            child: _statBox("XP total", "${g["total_xp"] ?? 0}"),
+            child: _statBox(context, "XP total", "${g["total_xp"] ?? 0}"),
           ),
           const SizedBox(width: 10),
           Expanded(
-            child: _statBox("Nível", "${g["level"] ?? 0}"),
+            child: _statBox(context, "Nível", "${g["level"] ?? 0}"),
           ),
         ],
       ),
@@ -170,16 +175,17 @@ class _GamificationPageState extends State<GamificationPage> {
       Row(
         children: [
           Expanded(
-            child: _statBox("Streak atual", "${g["current_streak"] ?? 0}"),
+            child: _statBox(context, "Streak atual", "${g["current_streak"] ?? 0}"),
           ),
           const SizedBox(width: 10),
           Expanded(
-            child: _statBox("Melhor streak", "${g["best_streak"] ?? 0}"),
+            child: _statBox(context, "Melhor streak", "${g["best_streak"] ?? 0}"),
           ),
         ],
       ),
       const SizedBox(height: 10),
       _statBox(
+        context,
         "Posição no ranking",
         g["ranking_position"] != null ? "#${g["ranking_position"]}" : "—",
       ),
@@ -187,13 +193,13 @@ class _GamificationPageState extends State<GamificationPage> {
         const SizedBox(height: 8),
         Text(
           "Último treino: ${g["last_training_date"]}",
-          style: const TextStyle(color: Colors.white54, fontSize: 12),
+          style: TextStyle(color: cs.onSurfaceVariant, fontSize: 12),
         ),
       ],
       const SizedBox(height: 16),
-      const Text(
+      Text(
         "Conquistas",
-        style: TextStyle(fontWeight: FontWeight.w600, color: Colors.white70),
+        style: TextStyle(fontWeight: FontWeight.w600, color: cs.onSurface),
       ),
       const SizedBox(height: 8),
       if (badges is List && badges.isNotEmpty)
@@ -202,38 +208,42 @@ class _GamificationPageState extends State<GamificationPage> {
           final b = Map<String, dynamic>.from(raw);
           return ListTile(
             contentPadding: EdgeInsets.zero,
-            leading: const Icon(Icons.military_tech, color: Color(0xFFE53935)),
+            leading: Icon(Icons.military_tech, color: cs.primary),
             title: Text(b["name"]?.toString() ?? ""),
             subtitle: Text(b["description"]?.toString() ?? ""),
           );
         })
       else
-        const Text(
+        Text(
           "Nenhuma conquista ainda.",
-          style: TextStyle(color: Colors.white54),
+          style: TextStyle(color: cs.onSurfaceVariant),
         ),
     ];
   }
 
-  Widget _statBox(String label, String value) {
+  Widget _statBox(BuildContext context, String label, String value) {
+    final cs = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0xFF1E1E1E),
+        color: cs.surfaceContainerHigh,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white10),
+        border: Border.all(color: cs.outline.withValues(alpha: 0.2)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: const TextStyle(color: Colors.white54, fontSize: 11)),
+          Text(
+            label,
+            style: TextStyle(color: cs.onSurfaceVariant, fontSize: 11),
+          ),
           const SizedBox(height: 4),
           Text(
             value,
-            style: const TextStyle(
+            style: TextStyle(
               fontWeight: FontWeight.bold,
               fontSize: 18,
-              color: Color(0xFFE53935),
+              color: cs.primary,
             ),
           ),
         ],
@@ -241,11 +251,11 @@ class _GamificationPageState extends State<GamificationPage> {
     );
   }
 
-  Widget _progressTile(Map<String, dynamic> p) {
+  Widget _progressTile(BuildContext context, Map<String, dynamic> p) {
+    final cs = Theme.of(context).colorScheme;
     final pct = p["progress_percent"];
     final pctVal = pct is num ? pct.toDouble() : double.tryParse("$pct") ?? 0.0;
     return Card(
-      color: const Color(0xFF1E1E1E),
       margin: const EdgeInsets.only(bottom: 8),
       child: Padding(
         padding: const EdgeInsets.all(12),
@@ -254,25 +264,28 @@ class _GamificationPageState extends State<GamificationPage> {
           children: [
             Text(
               p["modality_name"]?.toString() ?? "Modalidade",
-              style: const TextStyle(fontWeight: FontWeight.w600),
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+                color: cs.onSurface,
+              ),
             ),
             const SizedBox(height: 4),
             Text(
               "${p["graduation_name"] ?? ""} · "
               "${p["hours_trained"] ?? 0} / ${p["required_hours"] ?? 0} h",
-              style: const TextStyle(color: Colors.white54, fontSize: 12),
+              style: TextStyle(color: cs.onSurfaceVariant, fontSize: 12),
             ),
             const SizedBox(height: 8),
             LinearProgressIndicator(
               value: (pctVal / 100).clamp(0.0, 1.0),
-              backgroundColor: Colors.white12,
-              color: const Color(0xFFE53935),
+              backgroundColor: cs.outline.withValues(alpha: 0.25),
+              color: cs.primary,
             ),
             const SizedBox(height: 4),
             Text(
               "${pctVal.toStringAsFixed(1)}% · "
               "${(p["eligible"] == true) ? "Elegível à próxima graduação" : "Continue treinando"}",
-              style: const TextStyle(fontSize: 11, color: Colors.white54),
+              style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant),
             ),
           ],
         ),

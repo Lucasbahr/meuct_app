@@ -237,10 +237,13 @@ class _AdminStockTabState extends State<AdminStockTab> {
             child: _loading
                 ? ListView(
                     physics: const AlwaysScrollableScrollPhysics(),
-                    children: const [
-                      SizedBox(height: 120),
+                    children: [
+                      const SizedBox(height: 120),
                       Center(
-                        child: CircularProgressIndicator(color: AdminPanelStyle.accent),
+                        child: CircularProgressIndicator(
+                          color:
+                              Theme.of(context).colorScheme.tertiary,
+                        ),
                       ),
                     ],
                   )
@@ -280,8 +283,9 @@ class _AdminStockTabState extends State<AdminStockTab> {
                               final name = (p["name"] ?? "").toString();
                               final track = p["track_stock"] != false;
                               final stock = p["stock"];
+                              final cs = Theme.of(context).colorScheme;
                               return Material(
-                                color: AdminPanelStyle.cardBgElevated,
+                                color: cs.surfaceContainerHigh,
                                 borderRadius: BorderRadius.circular(12),
                                 child: Padding(
                                   padding: const EdgeInsets.symmetric(

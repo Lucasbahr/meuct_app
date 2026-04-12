@@ -55,7 +55,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
             const SizedBox(height: 20),
             SizedBox(
               width: double.infinity,
-              child: ElevatedButton(
+              child: FilledButton(
                 onPressed: _isLoading ? null : _sendRecovery,
                 child: Text(_isLoading ? "Enviando..." : "ENVIAR"),
               ),

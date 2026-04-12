@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/api/dio_unauthorized.dart';
+import '../../../shared/themes/app_button_styles.dart';
 import '../../auth/repositories/auth_repository.dart';
 import '../services/training_service.dart';
-
-const _kAccent = Color(0xFFE53935);
 
 /// Aluno: quando elegível (`eligible_for_promotion`), solicita agendamento de graduação.
 class GraduationSchedulePage extends StatefulWidget {
@@ -150,17 +149,20 @@ class _GraduationSchedulePageState extends State<GraduationSchedulePage> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return Scaffold(
       appBar: AppBar(title: const Text("Graduação")),
       body: RefreshIndicator(
-        color: _kAccent,
+        color: cs.primary,
         onRefresh: _load,
         child: _loading
             ? ListView(
                 physics: const AlwaysScrollableScrollPhysics(),
-                children: const [
-                  SizedBox(height: 120),
-                  Center(child: CircularProgressIndicator(color: _kAccent)),
+                children: [
+                  const SizedBox(height: 120),
+                  Center(
+                    child: CircularProgressIndicator(color: cs.primary),
+                  ),
                 ],
               )
             : _error != null
@@ -168,7 +170,10 @@ class _GraduationSchedulePageState extends State<GraduationSchedulePage> {
                     physics: const AlwaysScrollableScrollPhysics(),
                     padding: const EdgeInsets.all(24),
                     children: [
-                      Text(_error!, style: const TextStyle(color: Colors.white70)),
+                      Text(
+                        _error!,
+                        style: TextStyle(color: cs.onSurfaceVariant),
+                      ),
                       const SizedBox(height: 16),
                       FilledButton(onPressed: _load, child: const Text("Tentar novamente")),
                     ],
@@ -176,19 +181,23 @@ class _GraduationSchedulePageState extends State<GraduationSchedulePage> {
                 : ListView(
                     padding: const EdgeInsets.all(16),
                     children: [
-                      const Text(
+                      Text(
                         "Quando você completar as horas da faixa atual, pode solicitar "
                         "agendamento da cerimônia de graduação. A academia confirma o horário.",
-                        style: TextStyle(color: Colors.white54, fontSize: 13, height: 1.4),
+                        style: TextStyle(
+                          color: cs.onSurfaceVariant,
+                          fontSize: 13,
+                          height: 1.4,
+                        ),
                       ),
                       const SizedBox(height: 20),
                       if (_rows.isEmpty)
-                        const Padding(
-                          padding: EdgeInsets.only(top: 40),
+                        Padding(
+                          padding: const EdgeInsets.only(top: 40),
                           child: Center(
                             child: Text(
                               "Nenhuma modalidade vinculada ao seu perfil.",
-                              style: TextStyle(color: Colors.white38),
+                              style: TextStyle(color: cs.onSurfaceVariant),
                             ),
                           ),
                         )
@@ -213,12 +222,12 @@ class _GraduationSchedulePageState extends State<GraduationSchedulePage> {
                             child: Container(
                               padding: const EdgeInsets.all(14),
                               decoration: BoxDecoration(
-                                color: const Color(0xFF1A1A1A),
+                                color: cs.surfaceContainerHigh,
                                 borderRadius: BorderRadius.circular(14),
                                 border: Border.all(
                                   color: eligible
-                                      ? _kAccent.withValues(alpha: 0.45)
-                                      : Colors.white10,
+                                      ? cs.primary.withValues(alpha: 0.45)
+                                      : cs.outline.withValues(alpha: 0.25),
                                 ),
                               ),
                               child: Column(
@@ -226,24 +235,25 @@ class _GraduationSchedulePageState extends State<GraduationSchedulePage> {
                                 children: [
                                   Text(
                                     mname,
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontWeight: FontWeight.w700,
                                       fontSize: 16,
+                                      color: cs.onSurface,
                                     ),
                                   ),
                                   const SizedBox(height: 6),
                                   Text(
                                     "Faixa atual: $current",
-                                    style: const TextStyle(
-                                      color: Colors.white70,
+                                    style: TextStyle(
+                                      color: cs.onSurfaceVariant,
                                       fontSize: 13,
                                     ),
                                   ),
                                   const SizedBox(height: 4),
                                   Text(
                                     "Próxima: $nextName",
-                                    style: const TextStyle(
-                                      color: Colors.white54,
+                                    style: TextStyle(
+                                      color: cs.onSurfaceVariant,
                                       fontSize: 12,
                                     ),
                                   ),
@@ -254,21 +264,19 @@ class _GraduationSchedulePageState extends State<GraduationSchedulePage> {
                                           ? null
                                           : () => _submit(modalityId, mname),
                                       icon: busy
-                                          ? const SizedBox(
+                                          ? SizedBox(
                                               width: 18,
                                               height: 18,
                                               child: CircularProgressIndicator(
                                                 strokeWidth: 2,
-                                                color: Colors.white,
+                                                color: cs.onPrimary,
                                               ),
                                             )
                                           : const Icon(Icons.event_available_outlined),
                                       label: Text(
                                         busy ? "Enviando..." : "Solicitar agendamento",
                                       ),
-                                      style: FilledButton.styleFrom(
-                                        backgroundColor: _kAccent,
-                                      ),
+                                      style: context.appFilledPrimaryStyle,
                                     )
                                   else
                                     Text(
@@ -276,7 +284,7 @@ class _GraduationSchedulePageState extends State<GraduationSchedulePage> {
                                           ? "Não há próxima faixa cadastrada na API."
                                           : "Complete as horas necessárias para solicitar.",
                                       style: TextStyle(
-                                        color: Colors.white.withValues(alpha: 0.45),
+                                        color: cs.onSurfaceVariant,
                                         fontSize: 12,
                                       ),
                                     ),

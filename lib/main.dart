@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'core/theme/app_theme_controller.dart';
 import 'features/auth/change_password/change_password_page.dart';
 import 'features/auth/forgot_password/forgot_password_page.dart';
 import 'features/auth/login/login_page.dart';
@@ -19,13 +20,16 @@ import 'features/student/screens/complete_profile_page.dart';
 import 'features/marketplace/screens/marketplace_page.dart';
 import 'features/dashboard/screens/academy_dashboard_page.dart';
 import 'features/dashboard/screens/sales_dashboard_page.dart';
+import 'features/dashboard/screens/analytics_dashboard_page.dart';
 import 'features/training/screens/gamification_page.dart';
 import 'features/training/screens/ranking_page.dart';
 import 'features/training/screens/graduation_schedule_page.dart';
 import 'features/gyms/screens/gym_select_page.dart';
-import 'core/branding/app_branding.dart';
+import 'shared/themes/app_theme.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await AppThemeController.instance.load();
   runApp(const MyApp());
 }
 
@@ -34,25 +38,15 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ValueListenableBuilder<BrandingSnapshot>(
-      valueListenable: AppBrandingController.instance.snapshot,
-      builder: (context, snap, _) {
+    return ValueListenableBuilder<ThemeMode>(
+      valueListenable: AppThemeController.instance.themeMode,
+      builder: (context, mode, _) {
         return MaterialApp(
-          title: 'Genesis MMA',
-          theme: snap.theme,
-          builder: (context, child) {
-            return Stack(
-              fit: StackFit.expand,
-              children: [
-                Image.asset(
-                  "assets/images/login_bg.png",
-                  fit: BoxFit.cover,
-                ),
-                Container(color: snap.scrimOverlay),
-                if (child case final content?) content,
-              ],
-            );
-          },
+          title: 'MeuCT',
+          theme: buildAppLightTheme(),
+          darkTheme: buildAppDarkTheme(),
+          themeMode: mode,
+          builder: (context, child) => child ?? const SizedBox.shrink(),
           initialRoute: '/',
           routes: {
             '/': (context) => const LoginPage(),
@@ -78,6 +72,7 @@ class MyApp extends StatelessWidget {
             '/marketplace': (context) => const MarketplacePage(),
             '/dashboard-academy': (context) => const AcademyDashboardPage(),
             '/dashboard-sales': (context) => const SalesDashboardPage(),
+            '/dashboard-analytics': (context) => const AnalyticsDashboardPage(),
             '/gamification': (context) => const GamificationPage(),
             '/ranking': (context) => const RankingPage(),
             '/graduation-schedule': (context) =>

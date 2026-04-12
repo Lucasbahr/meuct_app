@@ -297,7 +297,10 @@ class _AdminAcademyModalitiesTabState extends State<AdminAcademyModalitiesTab> {
                           style: TextStyle(
                             fontSize: 12,
                             height: 1.35,
-                            color: Colors.white.withValues(alpha: 0.5),
+                            color: Theme.of(ctx)
+                                .colorScheme
+                                .onSurfaceVariant
+                                .withValues(alpha: 0.75),
                           ),
                         ),
                       ),
@@ -369,7 +372,10 @@ class _AdminAcademyModalitiesTabState extends State<AdminAcademyModalitiesTab> {
                       style: TextStyle(
                         fontSize: 11,
                         height: 1.35,
-                        color: Colors.white.withValues(alpha: 0.45),
+                        color: Theme.of(ctx)
+                            .colorScheme
+                            .onSurfaceVariant
+                            .withValues(alpha: 0.7),
                       ),
                     ),
                     const SizedBox(height: 10),
@@ -379,7 +385,10 @@ class _AdminAcademyModalitiesTabState extends State<AdminAcademyModalitiesTab> {
                         child: Text(
                           'Nenhuma faixa cadastrada — a academia pode usar só o campo de horas acima.',
                           style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.4),
+                            color: Theme.of(ctx)
+                                .colorScheme
+                                .onSurfaceVariant
+                                .withValues(alpha: 0.65),
                             fontSize: 12,
                           ),
                         ),
@@ -432,10 +441,7 @@ class _AdminAcademyModalitiesTabState extends State<AdminAcademyModalitiesTab> {
                       }),
                     const SizedBox(height: 16),
                     FilledButton(
-                      style: FilledButton.styleFrom(
-                        backgroundColor: AdminPanelStyle.accent,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                      ),
+                      style: AdminPanelStyle.filledPrimary(ctx),
                       onPressed: () {
                         if (nomeCtrl.text.trim().isEmpty) {
                           ScaffoldMessenger.of(ctx).showSnackBar(
@@ -558,7 +564,7 @@ class _AdminAcademyModalitiesTabState extends State<AdminAcademyModalitiesTab> {
             child: const Text('Cancelar'),
           ),
           FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: AdminPanelStyle.accent),
+            style: AdminPanelStyle.filledPrimary(ctx),
             onPressed: () => Navigator.pop(ctx, true),
             child: const Text('Remover'),
           ),
@@ -586,11 +592,14 @@ class _AdminAcademyModalitiesTabState extends State<AdminAcademyModalitiesTab> {
 
   @override
   Widget build(BuildContext context) {
-    final primary = Theme.of(context).colorScheme.primary;
+    final cs = Theme.of(context).colorScheme;
+    final primary = cs.primary;
 
     if (_loading) {
-      return const Center(
-        child: CircularProgressIndicator(color: AdminPanelStyle.accent),
+      return Center(
+        child: CircularProgressIndicator(
+          color: Theme.of(context).colorScheme.tertiary,
+        ),
       );
     }
     if (_error != null) {
@@ -629,15 +638,13 @@ class _AdminAcademyModalitiesTabState extends State<AdminAcademyModalitiesTab> {
                 child: Text(
                   '${_list.length} modalidade${_list.length == 1 ? '' : 's'}',
                   style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.55),
+                    color: cs.onSurfaceVariant.withValues(alpha: 0.85),
                     fontSize: 13,
                   ),
                 ),
               ),
               FilledButton.icon(
-                style: FilledButton.styleFrom(
-                  backgroundColor: AdminPanelStyle.accent,
-                ),
+                style: AdminPanelStyle.filledPrimary(context),
                 onPressed: () => _openEditor(),
                 icon: const Icon(Icons.add, size: 20),
                 label: const Text('Nova'),
@@ -674,7 +681,7 @@ class _AdminAcademyModalitiesTabState extends State<AdminAcademyModalitiesTab> {
               return Padding(
                 padding: const EdgeInsets.only(bottom: 10),
                 child: Material(
-                  color: AdminPanelStyle.cardBgElevated,
+                  color: Theme.of(context).colorScheme.surfaceContainerHigh,
                   borderRadius: BorderRadius.circular(14),
                   child: InkWell(
                     borderRadius: BorderRadius.circular(14),
@@ -711,7 +718,7 @@ class _AdminAcademyModalitiesTabState extends State<AdminAcademyModalitiesTab> {
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(
                                 fontSize: 12,
-                                color: Colors.white.withValues(alpha: 0.5),
+                                color: cs.onSurfaceVariant.withValues(alpha: 0.8),
                               ),
                             ),
                           ],
@@ -733,7 +740,7 @@ class _AdminAcademyModalitiesTabState extends State<AdminAcademyModalitiesTab> {
                                   label: Text(
                                     'Horas globais não definidas',
                                     style: TextStyle(
-                                      color: Colors.white.withValues(alpha: 0.6),
+                                      color: cs.onSurfaceVariant.withValues(alpha: 0.9),
                                       fontSize: 12,
                                     ),
                                   ),
@@ -761,7 +768,7 @@ class _AdminAcademyModalitiesTabState extends State<AdminAcademyModalitiesTab> {
                               style: TextStyle(
                                 fontSize: 12,
                                 height: 1.3,
-                                color: Colors.white.withValues(alpha: 0.55),
+                                color: cs.onSurfaceVariant.withValues(alpha: 0.85),
                               ),
                             ),
                           ],
@@ -770,7 +777,7 @@ class _AdminAcademyModalitiesTabState extends State<AdminAcademyModalitiesTab> {
                             'Toque para ver tudo do servidor, editar, excluir faixas ou adicionar.',
                             style: TextStyle(
                               fontSize: 11,
-                              color: Colors.white.withValues(alpha: 0.35),
+                              color: cs.onSurfaceVariant.withValues(alpha: 0.65),
                             ),
                           ),
                         ],

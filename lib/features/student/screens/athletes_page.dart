@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../core/graduacao/bjj_graduacao.dart';
+import '../../../core/theme/app_colors.dart';
 import '../services/student_service.dart';
 
 class AthletesPage extends StatefulWidget {
@@ -43,13 +44,13 @@ class _AthletesPageState extends State<AthletesPage> {
     final primary = Theme.of(context).colorScheme.primary;
 
     return Scaffold(
-      backgroundColor: Colors.transparent,
       appBar: AppBar(
         title: const Text("Atletas"),
       ),
       body: FutureBuilder<List<Map<String, dynamic>>>(
         future: _athletesFuture,
         builder: (context, snapshot) {
+          final cs = Theme.of(context).colorScheme;
           if (snapshot.connectionState == ConnectionState.waiting) {
             return Center(
               child: CircularProgressIndicator(color: primary),
@@ -64,7 +65,10 @@ class _AthletesPageState extends State<AthletesPage> {
                       .toString()
                       .replaceFirst("Exception: ", ""),
                   textAlign: TextAlign.center,
-                  style: const TextStyle(color: Colors.white70, height: 1.4),
+                  style: TextStyle(
+                    color: cs.onSurfaceVariant,
+                    height: 1.4,
+                  ),
                 ),
               ),
             );
@@ -72,10 +76,10 @@ class _AthletesPageState extends State<AthletesPage> {
 
           final athletes = snapshot.data ?? [];
           if (athletes.isEmpty) {
-            return const Center(
+            return Center(
               child: Text(
                 "Nenhum atleta encontrado.",
-                style: TextStyle(color: Colors.white54),
+                style: TextStyle(color: cs.onSurfaceVariant),
               ),
             );
           }
@@ -154,7 +158,7 @@ class _AthleteShowcaseCard extends StatelessWidget {
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(22),
             border: Border.all(color: primary, width: 2),
-            color: Colors.black.withValues(alpha: 0.32),
+            color: cs.scrim.withValues(alpha: 0.38),
             boxShadow: [
               BoxShadow(
                 color: primary.withValues(alpha: 0.18),
@@ -172,7 +176,7 @@ class _AthleteShowcaseCard extends StatelessWidget {
                 if (id != null)
                   _AthletePhotoLayer(studentId: id, accent: primary)
                 else
-                  const ColoredBox(color: Color(0xFF121212)),
+                  ColoredBox(color: cs.surfaceContainerHighest),
                 Positioned(
                   left: 0,
                   top: 0,
@@ -209,7 +213,7 @@ class _AthleteShowcaseCard extends StatelessWidget {
                         style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w800,
-                          color: Colors.white.withValues(alpha: 0.95),
+                          color: cs.onPrimary.withValues(alpha: 0.95),
                           letterSpacing: 1.2,
                         ),
                       ),
@@ -228,8 +232,8 @@ class _AthleteShowcaseCard extends StatelessWidget {
                         end: Alignment.bottomCenter,
                         colors: [
                           Colors.transparent,
-                          Colors.black.withValues(alpha: 0.5),
-                          Colors.black.withValues(alpha: 0.94),
+                          cs.scrim.withValues(alpha: 0.5),
+                          cs.scrim.withValues(alpha: 0.92),
                         ],
                       ),
                     ),
@@ -246,7 +250,7 @@ class _AthleteShowcaseCard extends StatelessWidget {
                             fontWeight: FontWeight.w900,
                             height: 1.05,
                             letterSpacing: 0.5,
-                            color: Colors.white,
+                            color: AppPalette.onAccent,
                           ),
                         ),
                         const SizedBox(height: 6),
@@ -266,13 +270,29 @@ class _AthleteShowcaseCard extends StatelessWidget {
                             if (modalidade.isNotEmpty)
                               _chip(modalidade, primary, context),
                             if (grad != "-" && grad.isNotEmpty)
-                              _chip(grad, Colors.white70, context),
+                              _chip(
+                                grad,
+                                AppPalette.onAccent.withValues(alpha: 0.72),
+                                context,
+                              ),
                             if (age != null)
-                              _chip("$age anos", Colors.white60, context),
+                              _chip(
+                                "$age anos",
+                                AppPalette.onAccent.withValues(alpha: 0.62),
+                                context,
+                              ),
                             if (nivel.isNotEmpty)
-                              _chip(nivel, Colors.white70, context),
+                              _chip(
+                                nivel,
+                                AppPalette.onAccent.withValues(alpha: 0.72),
+                                context,
+                              ),
                             if (cartelMma.isNotEmpty && cartelMma != "-")
-                              _chip("MMA $cartelMma", Colors.white54, context),
+                              _chip(
+                                "MMA $cartelMma",
+                                AppPalette.onAccent.withValues(alpha: 0.55),
+                                context,
+                              ),
                           ],
                         ),
                       ],
@@ -288,10 +308,11 @@ class _AthleteShowcaseCard extends StatelessWidget {
   }
 
   Widget _chip(String text, Color accentColor, BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: 0.45),
+        color: cs.scrim.withValues(alpha: 0.42),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
           color: accentColor.withValues(
@@ -321,7 +342,7 @@ class _SubtleBackdrop extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ColoredBox(
-      color: const Color(0xFF121212),
+      color: Theme.of(context).scaffoldBackgroundColor,
       child: CustomPaint(
         painter: _AccentStrokePainter(accent: accent),
         child: const SizedBox.expand(),
@@ -385,12 +406,13 @@ class _AthletePhotoLayerState extends State<_AthletePhotoLayer> {
 
   @override
   Widget build(BuildContext context) {
+    final fill = Theme.of(context).colorScheme.surfaceContainerHighest;
     return FutureBuilder<Uint8List?>(
       future: _bytes,
       builder: (context, snap) {
         if (snap.connectionState != ConnectionState.done) {
           return ColoredBox(
-            color: const Color(0xFF141414),
+            color: fill,
             child: Center(
               child: SizedBox(
                 width: 32,
@@ -406,12 +428,15 @@ class _AthletePhotoLayerState extends State<_AthletePhotoLayer> {
         final b = snap.data;
         if (b == null || b.isEmpty) {
           return ColoredBox(
-            color: const Color(0xFF101010),
+            color: fill,
             child: Center(
               child: Icon(
                 Icons.person,
                 size: 120,
-                color: Colors.white.withValues(alpha: 0.12),
+                color: Theme.of(context)
+                    .colorScheme
+                    .onSurfaceVariant
+                    .withValues(alpha: 0.2),
               ),
             ),
           );
@@ -419,7 +444,7 @@ class _AthletePhotoLayerState extends State<_AthletePhotoLayer> {
         // Contain = foto inteira dentro do cartão (sem crop tipo “zoom”).
         // Faixas escuras nas bordas se a proporção não bater com o retângulo.
         return ColoredBox(
-          color: const Color(0xFF101010),
+          color: fill,
           child: Image.memory(
             b,
             fit: BoxFit.contain,
@@ -499,18 +524,21 @@ class _AthleteDetailSheet extends StatelessWidget {
 
   bool _cartelOk(String s) => s.isNotEmpty && s != "-";
 
-  List<Widget> _cartelRows(String mma, String jiu, String k1) {
+  List<Widget> _cartelRows(ColorScheme cs, String mma, String jiu, String k1) {
     final rows = <Widget>[];
-    if (_cartelOk(mma)) rows.add(_detailRow("MMA", mma));
-    if (_cartelOk(jiu)) rows.add(_detailRow("Jiu-Jitsu", jiu));
-    if (_cartelOk(k1)) rows.add(_detailRow("K-1 / kickboxing", k1));
+    if (_cartelOk(mma)) rows.add(_detailRow(cs, "MMA", mma));
+    if (_cartelOk(jiu)) rows.add(_detailRow(cs, "Jiu-Jitsu", jiu));
+    if (_cartelOk(k1)) rows.add(_detailRow(cs, "K-1 / kickboxing", k1));
     if (rows.isEmpty) {
-      return const [
+      return [
         Padding(
-          padding: EdgeInsets.only(bottom: 4),
+          padding: const EdgeInsets.only(bottom: 4),
           child: Text(
             "Sem cartel registrado.",
-            style: TextStyle(color: Colors.white38, fontSize: 13),
+            style: TextStyle(
+              color: cs.onSurfaceVariant,
+              fontSize: 13,
+            ),
           ),
         ),
       ];
@@ -560,7 +588,8 @@ class _AthleteDetailSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final primary = Theme.of(context).colorScheme.primary;
+    final cs = Theme.of(context).colorScheme;
+    final primary = cs.primary;
     final nome = _str(athlete["nome"]).isEmpty ? "Atleta" : _str(athlete["nome"]);
     final modalidade = _str(athlete["modalidade"]);
     final grad = formatGraduacaoDisplay(_str(athlete["graduacao"]));
@@ -582,11 +611,14 @@ class _AthleteDetailSheet extends StatelessWidget {
     final sid = _studentId();
 
     return Container(
-      decoration: const BoxDecoration(
-        color: Color(0xFF1E1E1E),
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      decoration: BoxDecoration(
+        color: cs.surfaceContainerHigh,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
         border: Border(
-          top: BorderSide(color: Color(0x22FFFFFF), width: 1),
+          top: BorderSide(
+            color: cs.outline.withValues(alpha: 0.35),
+            width: 1,
+          ),
         ),
       ),
       child: Column(
@@ -596,7 +628,7 @@ class _AthleteDetailSheet extends StatelessWidget {
             width: 40,
             height: 4,
             decoration: BoxDecoration(
-              color: Colors.white24,
+              color: cs.onSurfaceVariant.withValues(alpha: 0.35),
               borderRadius: BorderRadius.circular(999),
             ),
           ),
@@ -619,17 +651,17 @@ class _AthleteDetailSheet extends StatelessWidget {
                     children: [
                       Text(
                         nome,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.w800,
-                          color: Colors.white,
+                          color: cs.onSurface,
                         ),
                       ),
                       if (modalidade.isNotEmpty)
                         Text(
                           modalidade,
-                          style: const TextStyle(
-                            color: Colors.white70,
+                          style: TextStyle(
+                            color: cs.onSurfaceVariant,
                             fontSize: 14,
                           ),
                         ),
@@ -645,8 +677,8 @@ class _AthleteDetailSheet extends StatelessWidget {
                       if (age != null)
                         Text(
                           "$age anos",
-                          style: const TextStyle(
-                            color: Colors.white54,
+                          style: TextStyle(
+                            color: cs.onSurfaceVariant,
                             fontSize: 12,
                           ),
                         ),
@@ -655,7 +687,7 @@ class _AthleteDetailSheet extends StatelessWidget {
                 ),
                 IconButton(
                   onPressed: () => Navigator.pop(context),
-                  icon: const Icon(Icons.close, color: Colors.white54),
+                  icon: Icon(Icons.close, color: cs.onSurfaceVariant),
                 ),
               ],
             ),
@@ -668,19 +700,19 @@ class _AthleteDetailSheet extends StatelessWidget {
                 if (tempoTreinoStr.isNotEmpty || nivel.isNotEmpty) ...[
                   _sectionTitle("Treino e nível", primary),
                   if (tempoTreinoStr.isNotEmpty)
-                    _detailRow("Tempo de treino", tempoTreinoStr),
-                  if (nivel.isNotEmpty) _detailRow("Competição", nivel),
+                    _detailRow(cs, "Tempo de treino", tempoTreinoStr),
+                  if (nivel.isNotEmpty) _detailRow(cs, "Competição", nivel),
                   const SizedBox(height: 18),
                 ],
                 _sectionTitle("Cartéis", primary),
-                ..._cartelRows(cartelMma, cartelJiu, cartelK1),
+                ..._cartelRows(cs, cartelMma, cartelJiu, cartelK1),
                 if (ultimaData.isNotEmpty || ultimaMod.isNotEmpty) ...[
                   const SizedBox(height: 18),
                   _sectionTitle("Última luta", primary),
                   if (ultimaData.isNotEmpty)
-                    _detailRow("Data", ultimaData),
+                    _detailRow(cs, "Data", ultimaData),
                   if (ultimaMod.isNotEmpty)
-                    _detailRow("Modalidade", ultimaMod),
+                    _detailRow(cs, "Modalidade", ultimaMod),
                 ],
                 if (linkTap.isNotEmpty) ...[
                   const SizedBox(height: 20),
@@ -688,12 +720,7 @@ class _AthleteDetailSheet extends StatelessWidget {
                     width: double.infinity,
                     child: OutlinedButton.icon(
                       onPressed: () => _openTapology(context, linkTap),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: Colors.white,
-                        side: BorderSide(color: primary.withValues(alpha: 0.85)),
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                      ),
-                      icon: Icon(Icons.open_in_new, color: primary),
+                      icon: const Icon(Icons.open_in_new),
                       label: const Text("Abrir Tapology / perfil"),
                     ),
                   ),
@@ -721,7 +748,7 @@ class _AthleteDetailSheet extends StatelessWidget {
     );
   }
 
-  Widget _detailRow(String label, String value) {
+  Widget _detailRow(ColorScheme cs, String label, String value) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: Row(
@@ -731,8 +758,8 @@ class _AthleteDetailSheet extends StatelessWidget {
             width: 118,
             child: Text(
               label,
-              style: const TextStyle(
-                color: Colors.white54,
+              style: TextStyle(
+                color: cs.onSurfaceVariant,
                 fontSize: 13,
               ),
             ),
@@ -740,8 +767,8 @@ class _AthleteDetailSheet extends StatelessWidget {
           Expanded(
             child: Text(
               value,
-              style: const TextStyle(
-                color: Colors.white,
+              style: TextStyle(
+                color: cs.onSurface,
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
                 height: 1.25,
@@ -801,7 +828,7 @@ class _DetailAvatarState extends State<_DetailAvatar> {
         const side = 72.0;
         return ClipOval(
           child: ColoredBox(
-            color: const Color(0xFF2A2A2A),
+            color: Theme.of(context).colorScheme.surfaceContainerHighest,
             child: SizedBox(
               width: side,
               height: side,

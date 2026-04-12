@@ -1,11 +1,11 @@
 {
-    "name": "Genesis MMA",
-    "short_name": "Genesis MMA",
+    "name": "MeuCT",
+    "short_name": "MeuCT",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#000000",
     "theme_color": "#000000",
-    "description": "Genesis MMA — app da academia.",
+    "description": "MeuCT — app da academia.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

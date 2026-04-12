@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/theme/app_colors.dart';
 import '../widgets/admin_shell.dart';
 
 /// Check-ins agregados: volume e posição (mesma API que ranking de frequência).
@@ -15,7 +16,7 @@ class AdminAttendanceTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final accent = Theme.of(context).colorScheme.primary;
+    final cs = Theme.of(context).colorScheme;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -34,12 +35,12 @@ class AdminAttendanceTab extends StatelessWidget {
             child: Column(
               children: [
                 Material(
-                  color: Colors.black.withValues(alpha: 0.2),
+                  color: cs.surfaceContainerHigh,
                   child: TabBar(
-                    labelColor: Colors.white,
-                    unselectedLabelColor: Colors.white54,
-                    indicatorColor: accent,
-                    dividerColor: Colors.white.withValues(alpha: 0.06),
+                    labelColor: cs.onSurface,
+                    unselectedLabelColor: cs.onSurfaceVariant,
+                    indicatorColor: cs.tertiary,
+                    dividerColor: cs.outline.withValues(alpha: 0.25),
                     tabs: const [
                       Tab(icon: Icon(Icons.bar_chart_rounded, size: 20), text: "Volume"),
                       Tab(icon: Icon(Icons.emoji_events_outlined, size: 20), text: "Ranking"),
@@ -71,7 +72,8 @@ class _VolumeView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final primary = Theme.of(context).colorScheme.primary;
+    final cs = Theme.of(context).colorScheme;
+    final primary = cs.primary;
     return FutureBuilder<List<Map<String, dynamic>>>(
       future: future,
       builder: (context, snapshot) {
@@ -82,7 +84,7 @@ class _VolumeView extends StatelessWidget {
           return AdminErrorPanel(
             message: snapshot.error.toString(),
             onRetry: onRetry,
-            accent: primary,
+            buttonColor: primary,
           );
         }
         final ranking = snapshot.data ?? [];
@@ -106,7 +108,7 @@ class _VolumeView extends StatelessWidget {
             final progress = maxTotal == 0 ? 0.0 : total / maxTotal;
             return Container(
               padding: const EdgeInsets.all(16),
-              decoration: AdminPanelStyle.cardDecoration(),
+              decoration: AdminPanelStyle.cardDecoration(context),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -116,16 +118,17 @@ class _VolumeView extends StatelessWidget {
                       Expanded(
                         child: Text(
                           nome,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontWeight: FontWeight.w600,
                             fontSize: 15,
+                            color: cs.onSurface,
                           ),
                         ),
                       ),
                       Text(
                         "$total check-ins",
                         style: TextStyle(
-                          color: primary,
+                          color: cs.tertiary,
                           fontWeight: FontWeight.w600,
                           fontSize: 13,
                         ),
@@ -138,8 +141,8 @@ class _VolumeView extends StatelessWidget {
                     child: LinearProgressIndicator(
                       value: progress,
                       minHeight: 6,
-                      backgroundColor: Colors.white12,
-                      color: primary,
+                      backgroundColor: cs.surfaceContainerHighest,
+                      color: cs.tertiary,
                     ),
                   ),
                 ],
@@ -160,7 +163,8 @@ class _RankingView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final primary = Theme.of(context).colorScheme.primary;
+    final cs = Theme.of(context).colorScheme;
+    final primary = cs.primary;
     return FutureBuilder<List<Map<String, dynamic>>>(
       future: future,
       builder: (context, snapshot) {
@@ -171,7 +175,7 @@ class _RankingView extends StatelessWidget {
           return AdminErrorPanel(
             message: snapshot.error.toString(),
             onRetry: onRetry,
-            accent: primary,
+            buttonColor: primary,
           );
         }
         final ranking = snapshot.data ?? [];
@@ -196,24 +200,32 @@ class _RankingView extends StatelessWidget {
                     ? const Color(0xFFB0BEC5)
                     : pos == 3
                         ? const Color(0xFFCD7F32)
-                        : const Color(0xFF2A2A2A);
+                        : cs.surfaceContainerHighest;
             return Container(
-              decoration: AdminPanelStyle.cardDecoration(),
+              decoration: AdminPanelStyle.cardDecoration(context),
               child: ListTile(
                 contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
                 leading: CircleAvatar(
                   backgroundColor: medal,
-                  foregroundColor: pos <= 3 ? Colors.black : Colors.white,
+                  foregroundColor: medal.computeLuminance() > 0.55
+                      ? AppPalette.lightPrimary
+                      : AppPalette.onAccent,
                   child: Text(
                     "$pos",
                     style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
                 ),
-                title: Text(nome, style: const TextStyle(fontWeight: FontWeight.w500)),
+                title: Text(
+                  nome,
+                  style: TextStyle(
+                    fontWeight: FontWeight.w500,
+                    color: cs.onSurface,
+                  ),
+                ),
                 trailing: Text(
                   "$total",
                   style: TextStyle(
-                    color: primary,
+                    color: cs.tertiary,
                     fontWeight: FontWeight.bold,
                     fontSize: 16,
                   ),

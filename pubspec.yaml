@@ -1,5 +1,5 @@
 name: genesis_mma
-description: "Genesis MMA — app da academia (alunos, check-in, admin)."
+description: "MeuCT — app da academia (alunos, check-in, admin, tenant)."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
@@ -30,6 +30,7 @@ dependencies:
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
   flutter_colorpicker: ^1.1.0
+  shared_preferences: ^2.5.5
 
 dev_dependencies:
   flutter_test:
@@ -41,21 +42,22 @@ dev_dependencies:
 # 🔥 SPLASH SCREEN (entrada do app)
 flutter_native_splash:
   color: "#000000" # preto (combina com sua marca)
-  image: assets/icons/app_icon.png
+  image: assets/images/logo.png
 
   android: true
   ios: true
 
-# 🔥 ÍCONE DO APP
+# 🔥 ÍCONE DO APP (launcher)
 flutter_launcher_icons:
   android: true
   ios: true
+  remove_alpha_ios: true
 
-  image_path: "assets/icons/app_icon.png"
+  image_path: "assets/images/logo.png"
 
   # 👇 ÍCONE ADAPTATIVO (ANDROID)
   adaptive_icon_background: "#000000"
-  adaptive_icon_foreground: "assets/icons/app_icon.png"
+  adaptive_icon_foreground: "assets/images/logo.png"
 flutter:
 
   # The following line ensures that the Material Icons font is

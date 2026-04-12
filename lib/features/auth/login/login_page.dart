@@ -1,11 +1,12 @@
 import 'dart:async';
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../../../core/api/dio_unauthorized.dart';
 import '../../../core/auth/session_service.dart';
 import '../../../core/branding/app_branding.dart';
 import '../../../core/storage/gym_context_storage.dart';
 import '../../../core/storage/token_storage.dart';
+import '../../../shared/components/primary_button.dart';
+import '../../../shared/themes/app_tokens.dart';
 import '../../../widgets/password_field_with_visibility.dart';
 import '../../gyms/screens/gym_select_page.dart';
 import '../../student/services/student_service.dart';
@@ -42,7 +43,7 @@ class _LoginPageState extends State<LoginPage>
       curve: Curves.easeOutCubic,
     );
     _slideAnimation = Tween<Offset>(
-      begin: const Offset(0, 0.08),
+      begin: const Offset(0, 0.06),
       end: Offset.zero,
     ).animate(
       CurvedAnimation(
@@ -146,6 +147,7 @@ class _LoginPageState extends State<LoginPage>
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
+          backgroundColor: AppColors.error,
           content: Text(
             message.isEmpty
                 ? "Falha no login. Verifique email/senha e tente novamente."
@@ -168,153 +170,150 @@ class _LoginPageState extends State<LoginPage>
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     if (_checkingSession) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
+      return Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(color: cs.tertiary),
+        ),
       );
     }
+
+    final primary = cs.primary;
+    final screenW = MediaQuery.sizeOf(context).width;
+    final logoWidth = (screenW * 0.82).clamp(240.0, 400.0);
+
     return Scaffold(
       body: Stack(
+        fit: StackFit.expand,
         children: [
-          // 🔥 BACKGROUND (mantém efeito)
-          Positioned.fill(
-            child: ColorFiltered(
-              colorFilter: ColorFilter.mode(
-                Colors.black.withOpacity(0.35),
-                BlendMode.darken,
-              ),
-              child: Image.asset(
-                "assets/images/login_bg.png",
-                fit: BoxFit.cover,
+          DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  primary.withValues(alpha: 0.12),
+                  cs.surfaceContainerLowest,
+                  cs.surfaceContainerLowest,
+                ],
               ),
             ),
           ),
-
-          // 🔥 BLUR
-          Positioned.fill(
-            child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
-              child: Container(color: Colors.black.withOpacity(0.25)),
-            ),
-          ),
-
-          // 🔥 CARD LOGIN
-          Center(
-            child: FadeTransition(
-              opacity: _fadeAnimation,
-              child: SlideTransition(
-                position: _slideAnimation,
-                child: Container(
-                  width: 350,
-                  padding: const EdgeInsets.all(24),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF1E1E1E),
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: const [
-                      BoxShadow(
-                        color: Colors.black,
-                        blurRadius: 20,
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      // 🔥 LOGO CORRIGIDA (SEM FILTRO)
-                      Image.asset(
-                        "assets/images/logo.png",
-                        height: 90,
-                        fit: BoxFit.contain,
-                      ),
-
-                      const SizedBox(height: 20),
-
-                      TextField(
-                        controller: emailController,
-                        style: const TextStyle(color: Colors.white),
-                        decoration: InputDecoration(
-                          hintText: "Email",
-                          hintStyle: const TextStyle(color: Colors.white54),
-                          filled: true,
-                          fillColor: const Color(0xFF2A2A2A),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(10),
-                            borderSide: BorderSide.none,
+          SafeArea(
+            child: Center(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(AppSpacing.md),
+                child: FadeTransition(
+                  opacity: _fadeAnimation,
+                  child: SlideTransition(
+                    position: _slideAnimation,
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 400),
+                      child: Column(
+                        children: [
+                          Image.asset(
+                            'assets/images/logo.png',
+                            width: logoWidth,
+                            fit: BoxFit.contain,
+                            filterQuality: FilterQuality.high,
+                            isAntiAlias: true,
+                            semanticLabel: 'Logo MeuCT',
                           ),
-                        ),
-                      ),
-
-                      const SizedBox(height: 10),
-
-                      PasswordFieldWithVisibility(
-                        controller: passwordController,
-                        hintText: "Senha",
-                        style: const TextStyle(color: Colors.white),
-                        decoration: const InputDecoration(
-                          hintStyle: TextStyle(color: Colors.white54),
-                          filled: true,
-                          fillColor: Color(0xFF2A2A2A),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.all(Radius.circular(10)),
-                            borderSide: BorderSide.none,
+                          const SizedBox(height: AppSpacing.lg + 4),
+                          Align(
+                            alignment: Alignment.centerLeft,
+                            child: Text(
+                              'Entrar',
+                              style: Theme.of(context).textTheme.titleLarge,
+                            ),
                           ),
-                        ),
-                      ),
-
-                      const SizedBox(height: 20),
-
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.red,
-                            padding: const EdgeInsets.symmetric(vertical: 14),
+                          const SizedBox(height: AppSpacing.xs),
+                          Align(
+                            alignment: Alignment.centerLeft,
+                            child: Text(
+                              'Acesse sua conta da academia',
+                              style: TextStyle(
+                                color: cs.onSurfaceVariant,
+                                fontSize: 14,
+                              ),
+                            ),
                           ),
-                          onPressed: _isLoggingIn ? null : login,
-                          child: _isLoggingIn
-                              ? const SizedBox(
-                                  height: 22,
-                                  width: 22,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color: Colors.white,
+                          const SizedBox(height: AppSpacing.lg),
+                          Container(
+                            padding: const EdgeInsets.all(AppSpacing.lg),
+                            decoration: BoxDecoration(
+                              color: cs.surface,
+                              borderRadius: BorderRadius.circular(AppRadii.card + 4),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: cs.shadow.withValues(alpha: 0.1),
+                                  blurRadius: 24,
+                                  offset: const Offset(0, 8),
+                                ),
+                              ],
+                              border: Border.all(
+                                color: cs.outline.withValues(alpha: 0.08),
+                              ),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                TextField(
+                                  controller: emailController,
+                                  keyboardType: TextInputType.emailAddress,
+                                  textInputAction: TextInputAction.next,
+                                  decoration: const InputDecoration(
+                                    labelText: 'E-mail',
+                                    hintText: 'voce@email.com',
                                   ),
-                                )
-                              : const Text("ENTRAR"),
-                        ),
+                                ),
+                                const SizedBox(height: AppSpacing.md),
+                                PasswordFieldWithVisibility(
+                                  controller: passwordController,
+                                  hintText: 'Senha',
+                                  labelText: 'Senha',
+                                ),
+                                const SizedBox(height: AppSpacing.lg),
+                                PrimaryButton(
+                                  label: 'Entrar',
+                                  loading: _isLoggingIn,
+                                  onPressed: _isLoggingIn ? null : login,
+                                ),
+                                const SizedBox(height: AppSpacing.sm),
+                                TextButton(
+                                  onPressed: () {
+                                    Navigator.pushNamed(context, "/register");
+                                  },
+                                  child: const Text('Criar conta'),
+                                ),
+                                TextButton(
+                                  onPressed: () {
+                                    Navigator.pushNamed(
+                                      context,
+                                      "/forgot-password",
+                                    );
+                                  },
+                                  child: const Text('Esqueci minha senha'),
+                                ),
+                                TextButton(
+                                  onPressed: () {
+                                    Navigator.pushNamed(
+                                      context,
+                                      "/resend-verification",
+                                    );
+                                  },
+                                  child: const Text(
+                                    'Não recebeu o e-mail? Reenviar',
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
-
-                      const SizedBox(height: 8),
-
-                      TextButton(
-                        onPressed: () {
-                          Navigator.pushNamed(context, "/register");
-                        },
-                        child: const Text(
-                          "Criar conta",
-                          style: TextStyle(color: Colors.red),
-                        ),
-                      ),
-
-                      TextButton(
-                        onPressed: () {
-                          Navigator.pushNamed(context, "/forgot-password");
-                        },
-                        child: const Text(
-                          "Esqueci minha senha",
-                          style: TextStyle(color: Colors.red),
-                        ),
-                      ),
-                      TextButton(
-                        onPressed: () {
-                          Navigator.pushNamed(context, "/resend-verification");
-                        },
-                        child: const Text(
-                          "Nao recebeu o email? Reenviar",
-                          style: TextStyle(color: Colors.red),
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
                 ),
               ),

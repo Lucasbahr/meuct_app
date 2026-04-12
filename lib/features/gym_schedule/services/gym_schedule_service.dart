@@ -284,6 +284,21 @@ class GymScheduleService {
     }
   }
 
+  /// Graduações do tenant, opcionalmente filtradas por modalidade (`modalidade_id`).
+  Future<List<Map<String, dynamic>>> listGraduacoes({int? modalidadeId}) async {
+    try {
+      final response = await dio.get(
+        "/graduacoes",
+        queryParameters: {
+          if (modalidadeId != null) "modalidade_id": modalidadeId,
+        },
+      );
+      return parseFlexibleDataList(response.data);
+    } on DioException catch (e) {
+      throw Exception(_dioDetail(e));
+    }
+  }
+
   /// Admin academia: nova modalidade de luta. `POST /modalidades`.
   /// Campos extras (horas, faixas) são opcionais — a API pode ignorar o que não suportar.
   Future<Map<String, dynamic>> createModality({
