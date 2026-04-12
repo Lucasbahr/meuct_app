@@ -106,7 +106,7 @@ class _SystemPlatformPageState extends State<SystemPlatformPage> {
                 controller: nome,
                 decoration: const InputDecoration(
                   labelText: "Nome *",
-                  hintText: "Genesis Norte",
+                  hintText: "Ex.: Academia Centro",
                 ),
               ),
               const SizedBox(height: 12),
@@ -114,7 +114,7 @@ class _SystemPlatformPageState extends State<SystemPlatformPage> {
                 controller: slug,
                 decoration: const InputDecoration(
                   labelText: "Slug (opcional)",
-                  hintText: "genesis-norte",
+                  hintText: "slug-da-academia",
                 ),
               ),
               const SizedBox(height: 12),

@@ -34,12 +34,7 @@ class _SystemAdminHubPageState extends State<SystemAdminHubPage> {
     if (gid != null) {
       try {
         final cfg = await TenantService().getTenantConfig();
-        final tenant = cfg["tenant"];
-        if (tenant is Map) {
-          final t = Map<String, dynamic>.from(tenant);
-          final n = t["nome"] ?? t["name"];
-          if (n is String && n.trim().isNotEmpty) name = n.trim();
-        }
+        name = TenantService.displayNameFromConfig(cfg);
       } catch (_) {}
       if (name == null || name.isEmpty) {
         try {

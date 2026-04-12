@@ -25,6 +25,28 @@ class TenantService {
     return {};
   }
 
+  /// Nome da academia para títulos e marca d'água (mapa retornado por [getTenantConfig]).
+  static String? displayNameFromConfig(Map<String, dynamic> cfg) {
+    String? name;
+    final tenant = cfg['tenant'];
+    if (tenant is Map) {
+      final t = Map<String, dynamic>.from(tenant);
+      for (final k in ['nome', 'name', 'display_name', 'gym_name']) {
+        final n = t[k];
+        if (n is String && n.trim().isNotEmpty) {
+          name = n.trim();
+          break;
+        }
+      }
+    }
+    for (final k in ['gym_name', 'nome', 'name', 'tenant_name', 'academy_name']) {
+      if (name != null) break;
+      final v = cfg[k];
+      if (v is String && v.trim().isNotEmpty) name = v.trim();
+    }
+    return name;
+  }
+
   String _dioDetail(DioException e) {
     final data = e.response?.data;
     if (data is Map<String, dynamic>) {

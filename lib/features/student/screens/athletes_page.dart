@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../core/graduacao/bjj_graduacao.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../tenant/services/tenant_service.dart';
 import '../services/student_service.dart';
 
 class AthletesPage extends StatefulWidget {
@@ -16,6 +17,7 @@ class AthletesPage extends StatefulWidget {
 class _AthletesPageState extends State<AthletesPage> {
   final _service = StudentService();
   late Future<List<Map<String, dynamic>>> _athletesFuture;
+  String? _tenantDisplayName;
 
   DateTime? _parseBirthDate(Map<String, dynamic> a) {
     final raw = a["data_nascimento"] ?? a["nascimento"] ?? a["birth_date"];
@@ -37,6 +39,28 @@ class _AthletesPageState extends State<AthletesPage> {
   void initState() {
     super.initState();
     _athletesFuture = _service.listAthletes();
+    _loadTenantDisplayName();
+  }
+
+  Future<void> _loadTenantDisplayName() async {
+    try {
+      final cfg = await TenantService().getTenantConfig();
+      final name = TenantService.displayNameFromConfig(cfg);
+      if (!mounted) return;
+      setState(() => _tenantDisplayName = name);
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _tenantDisplayName = null);
+    }
+  }
+
+  /// Texto vertical no card: nome do tenant, curto para caber na faixa.
+  String _academyStampForCard() {
+    final raw = _tenantDisplayName?.trim();
+    if (raw == null || raw.isEmpty) return 'ACADEMIA';
+    final u = raw.toUpperCase();
+    if (u.length <= 14) return u;
+    return u.substring(0, 14);
   }
 
   @override
@@ -90,7 +114,10 @@ class _AthletesPageState extends State<AthletesPage> {
               setState(() {
                 _athletesFuture = _service.listAthletes();
               });
-              await _athletesFuture;
+              await Future.wait<void>([
+                _athletesFuture,
+                _loadTenantDisplayName(),
+              ]);
             },
             child: ListView.separated(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
@@ -102,6 +129,7 @@ class _AthletesPageState extends State<AthletesPage> {
                 return _AthleteShowcaseCard(
                   athlete: a,
                   age: age,
+                  academyStamp: _academyStampForCard(),
                   onTap: () => _AthleteDetailSheet.show(context, a, age),
                 );
               },
@@ -117,11 +145,13 @@ class _AthleteShowcaseCard extends StatelessWidget {
   const _AthleteShowcaseCard({
     required this.athlete,
     required this.age,
+    required this.academyStamp,
     required this.onTap,
   });
 
   final Map<String, dynamic> athlete;
   final int? age;
+  final String academyStamp;
   final VoidCallback onTap;
 
   @override
@@ -185,7 +215,7 @@ class _AthleteShowcaseCard extends StatelessWidget {
                     child: RotatedBox(
                       quarterTurns: 3,
                       child: Text(
-                        "GENESIS",
+                        academyStamp,
                         style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w900,
