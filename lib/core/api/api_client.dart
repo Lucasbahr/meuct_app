@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import '../storage/gym_context_storage.dart';
 import '../storage/token_storage.dart';
 
 class ApiClient {
@@ -26,6 +27,14 @@ class ApiClient {
 
           if (token != null) {
             options.headers["Authorization"] = "Bearer $token";
+            if (await GymContextStorage.instance.getGymId() == null) {
+              await GymContextStorage.instance.syncFromAccessToken(token);
+            }
+          }
+
+          final gymId = await GymContextStorage.instance.getGymId();
+          if (gymId != null) {
+            options.headers["X-Gym-Id"] = gymId.toString();
           }
 
           handler.next(options);
@@ -33,6 +42,7 @@ class ApiClient {
         onError: (err, handler) async {
           if (err.response?.statusCode == 401) {
             await TokenStorage().clearToken();
+            await GymContextStorage.instance.clear();
           }
           handler.next(err);
         },

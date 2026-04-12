@@ -289,9 +289,7 @@ class _ProfilePageState extends State<ProfilePage> {
                                       "Definida pela equipe; não pode ser alterada aqui.",
                                 ),
                                 child: Text(
-                                  formatGraduacaoDisplay(
-                                    (_student!["graduacao"] ?? "").toString(),
-                                  ),
+                                  graduationLabelFromStudent(_student!),
                                   style: const TextStyle(
                                     fontWeight: FontWeight.w600,
                                   ),
@@ -364,12 +362,10 @@ class _ProfilePageState extends State<ProfilePage> {
                                   "Telefone", (_student!["telefone"] ?? "-").toString()),
                               _item("Endereco", _enderecoExibicao()),
                               _item(
-                                  "Modalidade", (_student!["modalidade"] ?? "-").toString()),
+                                  "Modalidade", modalityLabelFromStudent(_student!)),
                               _item(
                                 "Graduacao",
-                                formatGraduacaoDisplay(
-                                  (_student!["graduacao"] ?? "").toString(),
-                                ),
+                                graduationLabelFromStudent(_student!),
                               ),
                               _item("Status", (_student!["status"] ?? "-").toString()),
                               if (_diasTreinados != null)

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../widgets/password_field_with_visibility.dart';
 import '../repositories/auth_repository.dart';
 
 class ResetPasswordPage extends StatefulWidget {
@@ -69,15 +70,13 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
               decoration: const InputDecoration(labelText: "Token"),
             ),
             const SizedBox(height: 12),
-            TextField(
+            PasswordFieldWithVisibility(
               controller: _newPasswordController,
-              obscureText: true,
               decoration: const InputDecoration(labelText: "Nova senha"),
             ),
             const SizedBox(height: 12),
-            TextField(
+            PasswordFieldWithVisibility(
               controller: _confirmPasswordController,
-              obscureText: true,
               decoration: const InputDecoration(labelText: "Confirmar senha"),
             ),
             const SizedBox(height: 20),

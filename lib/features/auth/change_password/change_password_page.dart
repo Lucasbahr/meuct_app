@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../widgets/password_field_with_visibility.dart';
 import '../repositories/auth_repository.dart';
 
 class ChangePasswordPage extends StatefulWidget {
@@ -60,21 +61,18 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            TextField(
+            PasswordFieldWithVisibility(
               controller: _currentPasswordController,
-              obscureText: true,
               decoration: const InputDecoration(labelText: "Senha atual"),
             ),
             const SizedBox(height: 12),
-            TextField(
+            PasswordFieldWithVisibility(
               controller: _newPasswordController,
-              obscureText: true,
               decoration: const InputDecoration(labelText: "Nova senha"),
             ),
             const SizedBox(height: 12),
-            TextField(
+            PasswordFieldWithVisibility(
               controller: _confirmPasswordController,
-              obscureText: true,
               decoration: const InputDecoration(labelText: "Confirmar senha"),
             ),
             const SizedBox(height: 20),

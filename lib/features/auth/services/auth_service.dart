@@ -32,14 +32,22 @@ class AuthService {
     }
   }
 
-  Future<void> register(String email, String password) async {
+  Future<void> register(
+    String email,
+    String password, {
+    int? gymId,
+  }) async {
     try {
+      final body = <String, dynamic>{
+        "email": email,
+        "password": password,
+      };
+      if (gymId != null) {
+        body["gym_id"] = gymId;
+      }
       await dio.post(
         "/auth/register",
-        data: {
-          "email": email,
-          "password": password,
-        },
+        data: body,
       );
     } on DioException catch (e) {
       throw _mapDioError(e, fallback: "Falha ao registrar usuario.");

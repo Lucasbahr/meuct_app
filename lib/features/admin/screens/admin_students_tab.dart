@@ -4,6 +4,9 @@ import 'admin_edit_student_page.dart';
 import 'admin_student_detail_page.dart';
 import '../widgets/register_student_attendance.dart';
 
+const _kAccent = Color(0xFFE53935);
+const _kCardBg = Color(0xFF1A1A1A);
+
 class AdminStudentsTab extends StatefulWidget {
   final AdminService service;
   const AdminStudentsTab({super.key, required this.service});
@@ -22,7 +25,6 @@ class _AdminStudentsTabState extends State<AdminStudentsTab> {
   final Map<String, Map<String, dynamic>> _rankingByNomeLower = {};
   final _searchController = TextEditingController();
   bool _onlyAthletes = false;
-  /// Evita duplo envio e mostra progresso no item da lista.
   int? _busyCheckInStudentId;
 
   @override
@@ -80,14 +82,6 @@ class _AdminStudentsTabState extends State<AdminStudentsTab> {
         (now.month == birth.month && now.day >= birth.day);
     if (!hadBirthday) age--;
     return age;
-  }
-
-  String _formatDate(DateTime? date) {
-    if (date == null) return "-";
-    final d = date.day.toString().padLeft(2, "0");
-    final m = date.month.toString().padLeft(2, "0");
-    final y = date.year.toString();
-    return "$d/$m/$y";
   }
 
   void _reindexRanking() {
@@ -158,25 +152,6 @@ class _AdminStudentsTabState extends State<AdminStudentsTab> {
     return null;
   }
 
-  String _studentSubtitle(Map<String, dynamic> s) {
-    final status = (s['status'] ?? '-').toString();
-    final eAtleta = (s['e_atleta'] ?? false) == true;
-    final birth = _parseBirthDate(s);
-    final age = _calcAge(birth);
-    final rank = _rankingForStudent(s);
-    final dias = _diasTreinoFromStudent(s) ?? _diasTreinoFromRow(rank);
-    final pres = _presencasFromRow(rank);
-
-    final parts = <String>[status];
-    if (dias != null) parts.add('Dias treino: $dias');
-    if (pres != null) parts.add('Presenças: $pres');
-    if (eAtleta) {
-      parts.add('Nasc: ${_formatDate(birth)}');
-      parts.add('Idade: ${age?.toString() ?? "-"}');
-    }
-    return parts.join(' • ');
-  }
-
   List<Map<String, dynamic>> _filteredStudents() {
     final q = _searchController.text.trim().toLowerCase();
     return _students.where((s) {
@@ -188,109 +163,205 @@ class _AdminStudentsTabState extends State<AdminStudentsTab> {
     }).toList();
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final list = _filteredStudents();
+  String _initials(String nome) {
+    final t = nome.trim();
+    if (t.isEmpty) return "?";
+    final parts = t.split(RegExp(r'\s+')).where((e) => e.isNotEmpty).toList();
+    if (parts.length >= 2) {
+      return (parts[0][0] + parts[1][0]).toUpperCase();
+    }
+    return t.substring(0, 1).toUpperCase();
+  }
 
-    return _isLoading
-        ? const Center(child: CircularProgressIndicator())
-        : _error != null
-            ? _errorView(_error!)
-            : ListView(
-                padding: const EdgeInsets.all(16),
-                children: [
-                  TextField(
-                    controller: _searchController,
-                    onChanged: (_) => setState(() {}),
-                    decoration: const InputDecoration(
-                      labelText: "Buscar aluno (nome ou email)",
-                      prefixIcon: Icon(Icons.search),
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  SwitchListTile(
-                    value: _onlyAthletes,
-                    onChanged: (v) => setState(() => _onlyAthletes = v),
-                    title: const Text("Mostrar somente atletas"),
-                  ),
-                  const SizedBox(height: 10),
-                  if (list.isEmpty)
-                    const Padding(
-                      padding: EdgeInsets.only(top: 24),
-                      child: Center(child: Text("Nenhum aluno encontrado.")),
-                    ),
-                  ...list.map((s) {
-                    final nome = (s["nome"] ?? "Sem nome").toString();
-                    final eAtleta = (s["e_atleta"] ?? false) == true;
-                    final sid = _idOf(s);
-                    final checkinBusy = sid != null && _busyCheckInStudentId == sid;
-                    return Card(
-                      color: const Color(0xFF1E1E1E),
-                      child: ListTile(
-                        title: Text(
-                          nome,
+  Widget _metaChip(String label, {IconData? icon}) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: Colors.black.withValues(alpha: 0.35),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.white12),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (icon != null) ...[
+            Icon(icon, size: 14, color: Colors.white54),
+            const SizedBox(width: 4),
+          ],
+          Text(
+            label,
+            style: const TextStyle(fontSize: 11, color: Colors.white70),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _studentCard(Map<String, dynamic> s) {
+    final nome = (s["nome"] ?? "Sem nome").toString();
+    final eAtleta = (s["e_atleta"] ?? false) == true;
+    final sid = _idOf(s);
+    final checkinBusy = sid != null && _busyCheckInStudentId == sid;
+    final status = (s['status'] ?? '—').toString();
+    final rank = _rankingForStudent(s);
+    final dias = _diasTreinoFromStudent(s) ?? _diasTreinoFromRow(rank);
+    final pres = _presencasFromRow(rank);
+    final birth = _parseBirthDate(s);
+    final age = _calcAge(birth);
+
+    final chips = <Widget>[
+      _metaChip(status, icon: Icons.flag_outlined),
+      if (dias != null) _metaChip("$dias dias de treino", icon: Icons.calendar_today_outlined),
+      if (pres != null) _metaChip("$pres presenças", icon: Icons.how_to_reg_outlined),
+      if (eAtleta) ...[
+        _metaChip("Atleta", icon: Icons.sports_mma),
+        _metaChip("${age ?? "—"} anos", icon: Icons.cake_outlined),
+      ],
+    ];
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Material(
+        color: _kCardBg,
+        borderRadius: BorderRadius.circular(16),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: () async {
+            final result = await Navigator.of(context).push<bool>(
+              MaterialPageRoute(
+                builder: (_) => AdminStudentDetailPage(
+                  service: widget.service,
+                  student: s,
+                ),
+              ),
+            );
+            if (result == true && mounted) await _load();
+          },
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Colors.white10),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(14, 14, 14, 10),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      CircleAvatar(
+                        radius: 26,
+                        backgroundColor: const Color(0xFF2C2C2C),
+                        child: Text(
+                          _initials(nome),
                           style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
+                            color: _kAccent,
+                            fontWeight: FontWeight.w800,
+                            fontSize: 16,
                           ),
                         ),
-                        subtitle: Text(
-                          _studentSubtitle(s),
-                          style: const TextStyle(color: Colors.white70),
-                        ),
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            if (eAtleta)
-                              const Icon(Icons.star, color: Colors.yellow),
-                            if (checkinBusy)
-                              const Padding(
-                                padding: EdgeInsets.symmetric(horizontal: 8),
-                                child: SizedBox(
-                                  width: 24,
-                                  height: 24,
-                                  child: CircularProgressIndicator(strokeWidth: 2),
-                                ),
-                              )
-                            else if (sid != null)
-                              TextButton(
-                                onPressed: () => registerStudentAttendance(
-                                  context: context,
-                                  service: widget.service,
-                                  student: s,
-                                  onBusy: (busy) {
-                                    if (!mounted) return;
-                                    setState(
-                                      () => _busyCheckInStudentId =
-                                          busy ? sid : null,
-                                    );
-                                  },
-                                  onSuccess: () {
-                                    if (mounted) _load();
-                                  },
-                                ),
-                                child: const Text('Check-in'),
-                              ),
-                            IconButton(
-                              tooltip: "Editar",
-                              onPressed: () async {
-                                final result = await Navigator.of(context).push<bool>(
-                                  MaterialPageRoute(
-                                    builder: (_) => AdminEditStudentPage(
-                                      service: widget.service,
-                                      student: s,
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    nome,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 16,
+                                      letterSpacing: -0.2,
                                     ),
                                   ),
-                                );
-                                if (result == true && mounted) {
-                                  await _load();
-                                }
-                              },
-                              icon: const Icon(Icons.edit_outlined),
+                                ),
+                                if (eAtleta)
+                                  const Icon(
+                                    Icons.star_rounded,
+                                    color: Color(0xFFFFCA28),
+                                    size: 22,
+                                  ),
+                              ],
+                            ),
+                            if ((s['email'] ?? '').toString().trim().isNotEmpty) ...[
+                              const SizedBox(height: 4),
+                              Text(
+                                (s['email'] ?? '').toString(),
+                                style: const TextStyle(
+                                  color: Colors.white54,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
+                            const SizedBox(height: 10),
+                            Wrap(
+                              spacing: 8,
+                              runSpacing: 8,
+                              children: chips,
                             ),
                           ],
                         ),
-                        onTap: () async {
+                      ),
+                    ],
+                  ),
+                ),
+                const Divider(height: 1, color: Colors.white10),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                  child: Row(
+                    children: [
+                      if (sid != null)
+                        TextButton.icon(
+                          onPressed: checkinBusy
+                              ? null
+                              : () => registerStudentAttendance(
+                                    context: context,
+                                    service: widget.service,
+                                    student: s,
+                                    onBusy: (busy) {
+                                      if (!mounted) return;
+                                      setState(
+                                        () => _busyCheckInStudentId =
+                                            busy ? sid : null,
+                                      );
+                                    },
+                                    onSuccess: () {
+                                      if (mounted) _load();
+                                    },
+                                  ),
+                          icon: checkinBusy
+                              ? const SizedBox(
+                                  width: 18,
+                                  height: 18,
+                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                )
+                              : const Icon(Icons.check_circle_outline, size: 20),
+                          label: const Text("Check-in"),
+                          style: TextButton.styleFrom(foregroundColor: _kAccent),
+                        ),
+                      const Spacer(),
+                      TextButton.icon(
+                        onPressed: () async {
+                          final result = await Navigator.of(context).push<bool>(
+                            MaterialPageRoute(
+                              builder: (_) => AdminEditStudentPage(
+                                service: widget.service,
+                                student: s,
+                              ),
+                            ),
+                          );
+                          if (result == true && mounted) await _load();
+                        },
+                        icon: const Icon(Icons.edit_outlined, size: 20),
+                        label: const Text("Editar"),
+                      ),
+                      IconButton(
+                        tooltip: "Abrir ficha",
+                        onPressed: () async {
                           final result = await Navigator.of(context).push<bool>(
                             MaterialPageRoute(
                               builder: (_) => AdminStudentDetailPage(
@@ -299,27 +370,203 @@ class _AdminStudentsTabState extends State<AdminStudentsTab> {
                               ),
                             ),
                           );
-                          if (result == true && mounted) {
-                            await _load();
-                          }
+                          if (result == true && mounted) await _load();
                         },
+                        icon: const Icon(Icons.chevron_right_rounded),
                       ),
-                    );
-                  }),
-                ],
-              );
-  }
-
-  Widget _errorView(String message) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Text(
-          message.replaceFirst("Exception: ", ""),
-          textAlign: TextAlign.center,
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );
   }
-}
 
+  @override
+  Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator(color: _kAccent));
+    }
+    if (_error != null) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.cloud_off_outlined, size: 48, color: Colors.white.withValues(alpha: 0.35)),
+              const SizedBox(height: 16),
+              Text(
+                _error!.replaceFirst("Exception: ", ""),
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: Colors.white70, height: 1.4),
+              ),
+              const SizedBox(height: 20),
+              FilledButton.icon(
+                onPressed: _load,
+                icon: const Icon(Icons.refresh),
+                label: const Text("Tentar novamente"),
+                style: FilledButton.styleFrom(backgroundColor: _kAccent),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    final list = _filteredStudents();
+
+    return RefreshIndicator(
+      color: _kAccent,
+      onRefresh: _load,
+      child: CustomScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        slivers: [
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          _kAccent.withValues(alpha: 0.18),
+                          Colors.transparent,
+                        ],
+                        begin: Alignment.centerLeft,
+                        end: Alignment.centerRight,
+                      ),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: Colors.white10),
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: _kAccent.withValues(alpha: 0.2),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Icon(Icons.groups_outlined, color: _kAccent, size: 26),
+                        ),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                "Gestão da academia",
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w800,
+                                  letterSpacing: -0.3,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                "${list.length} ${_students.length == list.length ? "membros" : "resultados"} · ${_students.length} no total",
+                                style: const TextStyle(
+                                  color: Colors.white60,
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: _searchController,
+                    onChanged: (_) => setState(() {}),
+                    style: const TextStyle(fontSize: 15),
+                    decoration: InputDecoration(
+                      filled: true,
+                      fillColor: _kCardBg,
+                      hintText: "Buscar por nome ou e-mail",
+                      hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.35)),
+                      prefixIcon: const Icon(Icons.search, color: Colors.white54),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.12)),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.12)),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: const BorderSide(color: _kAccent, width: 1.2),
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      ChoiceChip(
+                        label: const Text("Todos"),
+                        selected: !_onlyAthletes,
+                        onSelected: (_) => setState(() => _onlyAthletes = false),
+                        selectedColor: _kAccent.withValues(alpha: 0.35),
+                        labelStyle: TextStyle(
+                          color: !_onlyAthletes ? Colors.white : Colors.white70,
+                          fontWeight: !_onlyAthletes ? FontWeight.w600 : FontWeight.normal,
+                        ),
+                        side: const BorderSide(color: Colors.white24),
+                        showCheckmark: false,
+                      ),
+                      const SizedBox(width: 10),
+                      ChoiceChip(
+                        label: const Text("Só atletas"),
+                        selected: _onlyAthletes,
+                        onSelected: (_) => setState(() => _onlyAthletes = true),
+                        selectedColor: _kAccent.withValues(alpha: 0.35),
+                        labelStyle: TextStyle(
+                          color: _onlyAthletes ? Colors.white : Colors.white70,
+                          fontWeight: _onlyAthletes ? FontWeight.w600 : FontWeight.normal,
+                        ),
+                        side: const BorderSide(color: Colors.white24),
+                        showCheckmark: false,
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+          if (list.isEmpty)
+            SliverFillRemaining(
+              hasScrollBody: false,
+              child: Center(
+                child: Text(
+                  _students.isEmpty
+                      ? "Nenhum membro cadastrado."
+                      : "Nenhum resultado para o filtro.",
+                  style: const TextStyle(color: Colors.white54),
+                ),
+              ),
+            )
+          else
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+              sliver: SliverList(
+                delegate: SliverChildBuilderDelegate(
+                  (context, index) => _studentCard(list[index]),
+                  childCount: list.length,
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}

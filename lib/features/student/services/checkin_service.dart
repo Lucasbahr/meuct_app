@@ -40,9 +40,18 @@ class CheckinService {
     }
   }
 
-  Future<void> doCheckin() async {
+  /// Check-in vinculado a um horário da grade (`schedule_slot_id`).
+  Future<Map<String, dynamic>> doCheckin({required int scheduleSlotId}) async {
     try {
-      await dio.post("/checkin/");
+      final response = await dio.post(
+        "/checkin/",
+        data: {"schedule_slot_id": scheduleSlotId},
+      );
+      final data = response.data;
+      if (data is Map<String, dynamic> && data["data"] is Map) {
+        return Map<String, dynamic>.from(data["data"] as Map);
+      }
+      return {};
     } on DioException catch (e) {
       throw _mapError(e, fallback: "Falha ao realizar check-in.");
     }
