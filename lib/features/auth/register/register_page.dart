@@ -15,6 +15,8 @@ class _RegisterPageState extends State<RegisterPage> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
+  /// Quando a API exige `REGISTRATION_SECRET`, o aluno informa o código aqui.
+  final _registrationSecretController = TextEditingController();
   final _authRepository = AuthRepository();
   final _gymService = GymService();
   bool _isLoading = false;
@@ -34,6 +36,7 @@ class _RegisterPageState extends State<RegisterPage> {
     _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
+    _registrationSecretController.dispose();
     super.dispose();
   }
 
@@ -78,10 +81,12 @@ class _RegisterPageState extends State<RegisterPage> {
 
     setState(() => _isLoading = true);
     try {
+      final secret = _registrationSecretController.text.trim();
       await _authRepository.register(
         _emailController.text.trim(),
         _passwordController.text,
         gymId: _selectedGymId,
+        registrationSecret: secret.isEmpty ? null : secret,
       );
       if (!mounted) return;
       _showSnack("Conta criada. Verifique seu email para ativar o acesso.");
@@ -129,6 +134,15 @@ class _RegisterPageState extends State<RegisterPage> {
             PasswordFieldWithVisibility(
               controller: _confirmPasswordController,
               decoration: const InputDecoration(labelText: "Confirmar senha"),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _registrationSecretController,
+              decoration: const InputDecoration(
+                labelText: "Código de convite (opcional)",
+                helperText:
+                    "Só é necessário se a sua academia exigir registro fechado.",
+              ),
             ),
             const SizedBox(height: 16),
             Text(

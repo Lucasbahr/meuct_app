@@ -52,8 +52,7 @@ class StudentService {
     } on DioException catch (e) {
       throw Exception(
         "${_dioDetail(e)} "
-        "Na API, crie GET /students/athletes para usuários autenticados "
-        "ou libere GET /students/ para alunos verem a lista.",
+        "Peça ao administrador para liberar a lista de atletas para alunos.",
       );
     }
   }

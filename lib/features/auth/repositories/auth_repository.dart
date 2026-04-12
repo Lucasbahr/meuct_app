@@ -2,6 +2,7 @@ import '../services/auth_service.dart';
 import '../../../core/storage/gym_context_storage.dart';
 import '../../../core/storage/token_storage.dart';
 import '../../marketplace/marketplace_cart_store.dart';
+import '../../tenant/services/tenant_service.dart';
 
 class AuthRepository {
   final AuthService _service;
@@ -14,13 +15,21 @@ class AuthRepository {
         _storage = storage ?? TokenStorage();
 
   Future<void> login(String email, String password) async {
-    final token = await _service.login(email, password);
-    await _storage.saveToken(token);
-    await GymContextStorage.instance.syncFromAccessToken(token);
+    final tokens = await _service.login(email, password);
+    await _storage.saveTokens(
+      access: tokens.access,
+      refresh: tokens.refresh,
+    );
+    await GymContextStorage.instance.syncFromAccessToken(tokens.access);
   }
 
   Future<void> logout() async {
+    final refresh = await _storage.getRefreshToken();
+    if (refresh != null && refresh.isNotEmpty) {
+      await _service.logoutRemote(refresh);
+    }
     MarketplaceCartStore.clear();
+    TenantService.invalidateConfigCache();
     await GymContextStorage.instance.clear();
     await _storage.clearToken();
   }
@@ -29,8 +38,14 @@ class AuthRepository {
     String email,
     String password, {
     int? gymId,
+    String? registrationSecret,
   }) async {
-    await _service.register(email, password, gymId: gymId);
+    await _service.register(
+      email,
+      password,
+      gymId: gymId,
+      registrationSecret: registrationSecret,
+    );
   }
 
   Future<void> resendVerification(String email) async {

@@ -31,6 +31,19 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> {
     _load();
   }
 
+  Future<({String? error, Map<String, dynamic>? data})> _loadMap(
+    Future<Map<String, dynamic>> future,
+  ) async {
+    try {
+      return (error: null, data: await future);
+    } catch (e) {
+      return (
+        error: e.toString().replaceFirst('Exception: ', ''),
+        data: null,
+      );
+    }
+  }
+
   Future<void> _load() async {
     setState(() {
       _loading = true;
@@ -40,30 +53,26 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> {
     });
 
     try {
-      final academy = await _dash.dashboardAcademy(
-        auditLimit: 20,
-        loginsLimit: 12,
-      );
+      final results = await Future.wait<dynamic>([
+        _dash.dashboardAcademy(
+          auditLimit: 20,
+          loginsLimit: 12,
+        ),
+        _loadMap(_dash.studentsSubscriptionAlerts()),
+        _loadMap(_dash.reportsStudents()),
+      ]);
 
-      Map<String, dynamic>? alerts;
-      try {
-        alerts = await _dash.studentsSubscriptionAlerts();
-      } catch (e) {
-        _alertsError = e.toString().replaceFirst("Exception: ", "");
-      }
-
-      Map<String, dynamic>? report;
-      try {
-        report = await _dash.reportsStudents();
-      } catch (e) {
-        _reportError = e.toString().replaceFirst("Exception: ", "");
-      }
+      final academy = results[0] as Map<String, dynamic>;
+      final alertsBox = results[1] as ({String? error, Map<String, dynamic>? data});
+      final reportBox = results[2] as ({String? error, Map<String, dynamic>? data});
 
       if (!mounted) return;
       setState(() {
         _academy = academy;
-        _alerts = alerts;
-        _studentsReport = report;
+        _alerts = alertsBox.data;
+        _alertsError = alertsBox.error;
+        _studentsReport = reportBox.data;
+        _reportError = reportBox.error;
         _loading = false;
       });
     } catch (e) {
@@ -400,7 +409,7 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> {
           _sectionTitle(
             context,
             "Mensalidades",
-            subtitle: "Vencimentos e atrasos (API /students/alerts)",
+            subtitle: "Vencimentos e atrasos",
           ),
           if (_alertsError != null)
             Padding(

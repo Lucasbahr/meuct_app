@@ -242,26 +242,11 @@ class MarketplaceService {
     }
   }
 
-  /// Vínculo OAuth Mercado Pago do **usuário logado** (admin da academia). `GET /mercadopago/status`.
-  Future<Map<String, dynamic>?> getMercadoPagoUserOAuthStatus() async {
-    try {
-      final response = await dio.get("/mercadopago/status");
-      final data = response.data;
-      if (data is Map<String, dynamic> && data["data"] is Map) {
-        return Map<String, dynamic>.from(data["data"] as Map);
-      }
-      return null;
-    } on DioException catch (e) {
-      throw _mapError(e, "Falha ao consultar vínculo Mercado Pago (usuário).");
-    }
-  }
-
-  /// Inicia OAuth Mercado Pago no servidor. Abre a URL retornada no navegador/in-app.
+  /// Inicia OAuth Mercado Pago da **academia** (admin). Abre a URL no navegador / app do MP.
   ///
-  /// `GET /mercadopago/connect` com query opcional `next_url` (primeiro não vazio entre
-  /// [nextUrl], [returnUrl], [redirectUri]). Omitir tudo evita exigir
-  /// `MERCADOPAGO_OAUTH_SUCCESS_URL_PREFIX` no backend; o MP redireciona para
-  /// `…/mercadopago/callback` na API.
+  /// `POST /payment/mercado-pago/oauth/start` com body opcional `next_url` (primeiro não vazio
+  /// entre [nextUrl], [returnUrl], [redirectUri]). O callback da API é
+  /// `/payment/mercado-pago/oauth/callback` (cadastrar no app MP + `MERCADOPAGO_OAUTH_REDIRECT_URI`).
   Future<String> startMercadoPagoOAuth({
     String? nextUrl,
     String? returnUrl,
@@ -277,11 +262,12 @@ class MarketplaceService {
         }
       }
 
-      final response = await dio.get(
-        '/mercadopago/connect',
-        queryParameters: {
-          if (picked != null) 'next_url': picked,
-        },
+      final body = <String, dynamic>{
+        if (picked != null) 'next_url': picked,
+      };
+      final response = await dio.post(
+        '/payment/mercado-pago/oauth/start',
+        data: body.isEmpty ? {} : body,
       );
       final data = response.data;
       if (data is Map<String, dynamic>) {

@@ -93,14 +93,19 @@ class _GymDashboardTabState extends State<GymDashboardTab> {
               (results[5] as List).cast<Map<String, dynamic>>();
         });
       } else {
-        final summary = await _checkin.getSummary();
-        final history = await _checkin.getHistory();
-        final grouped = await _schedule.listScheduleGrouped();
+        final results = await Future.wait<Object>([
+          _checkin.getSummary().catchError((Object _) => <String, dynamic>{}),
+          _checkin.getHistory().catchError((Object _) => <Map<String, dynamic>>[]),
+          _schedule
+              .listScheduleGrouped()
+              .catchError((Object _) => <Map<String, dynamic>>[]),
+        ]);
         if (!mounted) return;
         setState(() {
-          _summary = summary;
-          _history = history;
-          _scheduleGrouped = grouped;
+          _summary = results[0] as Map<String, dynamic>;
+          _history = (results[1] as List).cast<Map<String, dynamic>>();
+          _scheduleGrouped =
+              (results[2] as List).cast<Map<String, dynamic>>();
         });
       }
     } catch (e) {

@@ -2,11 +2,24 @@ import 'package:dio/dio.dart';
 import '../../../core/errors/app_exception.dart';
 import '../../../core/models/api_response.dart';
 import '../../../core/api/api_client.dart';
+import '../../../core/api/dio_unauthorized.dart';
+import '../models/auth_tokens.dart';
 
 class AuthService {
   final Dio dio = ApiClient().dio;
 
-  Future<String> login(String email, String password) async {
+  static Dio _bareDio() => Dio(
+        BaseOptions(
+          baseUrl: ApiClient.baseUrl,
+          connectTimeout: const Duration(seconds: 20),
+          receiveTimeout: const Duration(seconds: 30),
+          headers: const {
+            "Content-Type": "application/json",
+          },
+        ),
+      );
+
+  Future<AuthTokens> login(String email, String password) async {
     try {
       final response = await dio.post(
         "/auth/login",
@@ -20,8 +33,14 @@ class AuthService {
       final data = apiResponse.data;
 
       if (data is Map<String, dynamic>) {
-        final token = data["access_token"];
-        if (token is String && token.isNotEmpty) return token;
+        final access = data["access_token"];
+        final refresh = data["refresh_token"];
+        if (access is String &&
+            access.isNotEmpty &&
+            refresh is String &&
+            refresh.isNotEmpty) {
+          return AuthTokens(access: access, refresh: refresh);
+        }
       }
 
       throw const AppException(
@@ -32,10 +51,23 @@ class AuthService {
     }
   }
 
+  /// Revoga refresh no servidor (`/auth/logout`); falhas são ignoradas.
+  Future<void> logoutRemote(String refreshToken) async {
+    try {
+      await _bareDio().post(
+        "/auth/logout",
+        queryParameters: {"refresh_token": refreshToken},
+      );
+    } on DioException {
+      // melhor esforço
+    }
+  }
+
   Future<void> register(
     String email,
     String password, {
     int? gymId,
+    String? registrationSecret,
   }) async {
     try {
       final body = <String, dynamic>{
@@ -44,6 +76,10 @@ class AuthService {
       };
       if (gymId != null) {
         body["gym_id"] = gymId;
+      }
+      final secret = registrationSecret?.trim();
+      if (secret != null && secret.isNotEmpty) {
+        body["registration_secret"] = secret;
       }
       await dio.post(
         "/auth/register",
@@ -118,19 +154,6 @@ class AuthService {
   }
 
   AppException _mapDioError(DioException e, {required String fallback}) {
-    final errorData = e.response?.data;
-    if (errorData is Map<String, dynamic>) {
-      final detail = errorData["detail"];
-      final message = errorData["message"];
-
-      if (detail is String && detail.isNotEmpty) {
-        return AppException(detail);
-      }
-      if (message is String && message.isNotEmpty) {
-        return AppException(message);
-      }
-    }
-
-    return AppException(fallback);
+    return AppException(dioErrorUserMessage(e, fallback: fallback));
   }
 }

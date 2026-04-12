@@ -45,7 +45,13 @@ class _AdminStudentsTabState extends State<AdminStudentsTab> {
       _error = null;
     });
     try {
-      final students = await widget.service.getStudents();
+      final pair = await Future.wait<List<Map<String, dynamic>>>([
+        widget.service.getStudents(),
+        widget.service
+            .getRanking()
+            .catchError((Object _) => <Map<String, dynamic>>[]),
+      ]);
+      final students = pair[0];
       students.sort(
         (a, b) => (a['nome'] ?? '')
             .toString()
@@ -53,12 +59,7 @@ class _AdminStudentsTabState extends State<AdminStudentsTab> {
             .trim()
             .compareTo((b['nome'] ?? '').toString().toLowerCase().trim()),
       );
-      List<Map<String, dynamic>> ranking = [];
-      try {
-        ranking = await widget.service.getRanking();
-      } catch (_) {
-        ranking = [];
-      }
+      final ranking = pair[1];
       if (!mounted) return;
       setState(() {
         _students = students;

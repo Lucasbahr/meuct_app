@@ -37,8 +37,8 @@ class _HomePageState extends State<HomePage> {
   Future<void> _boot() async {
     await _ensureSystemAdminGym();
     if (!mounted) return;
-    await _loadRole();
     await Future.wait<void>([
+      _loadRole(),
       loadStudent(),
       _loadTenantDisplayName(),
     ]);
