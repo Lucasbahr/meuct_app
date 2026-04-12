@@ -82,13 +82,17 @@ class _AcademyDashboardPageState extends State<AcademyDashboardPage> {
       _error = null;
     });
     try {
-      final dashFuture = _service.dashboardAcademy(auditLimit: 40, loginsLimit: 40);
-      final tenantNameFuture = _safeTenantDisplayName();
-      final dash = await dashFuture;
-      String? displayName = await tenantNameFuture;
+      final results = await Future.wait<dynamic>([
+        _service.dashboardAcademy(auditLimit: 40, loginsLimit: 40),
+        _safeTenantDisplayName(),
+        _safe(_service.studentsSubscriptionAlerts()),
+        _safe(_service.reportsStudents()),
+      ]);
+      final dash = results[0] as Map<String, dynamic>;
+      var displayName = results[1] as String?;
       displayName ??= _nameFromDashboard(dash);
-      final alerts = await _safe(_service.studentsSubscriptionAlerts());
-      final report = await _safe(_service.reportsStudents());
+      final alerts = results[2] as Map<String, dynamic>;
+      final report = results[3] as Map<String, dynamic>;
       if (!mounted) return;
       setState(() {
         _data = dash;

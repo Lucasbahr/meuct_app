@@ -12,6 +12,20 @@ bool dioIsNotFound(Object? error) {
 
 /// Extrai mensagem legível de [DioException] (API MeuCT / FastAPI).
 String dioErrorUserMessage(DioException e, {String fallback = "Falha na requisição."}) {
+  if (e.response?.statusCode == 429) {
+    final ra = e.response?.headers.value('retry-after');
+    if (ra != null && ra.trim().isNotEmpty) {
+      final sec = int.tryParse(ra.trim());
+      if (sec != null && sec > 0) {
+        final min = (sec / 60).ceil();
+        return min <= 1
+            ? "Muitas tentativas. Aguarde cerca de $sec segundos e tente de novo."
+            : "Muitas tentativas. Aguarde cerca de $min minutos e tente de novo.";
+      }
+    }
+    return "Muitas tentativas. Aguarde um momento e tente de novo.";
+  }
+
   final raw = e.response?.data;
   if (raw is Map) {
     final body = Map<String, dynamic>.from(raw);

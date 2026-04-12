@@ -82,23 +82,23 @@ class _ProfilePageState extends State<ProfilePage> {
         final birth = _parseBirthDate(_student?["data_nascimento"]);
         _dataNascimentoController.text = _formatDate(birth);
       });
-      final bytes = await _studentService.getMyProfilePhotoBytes();
+      final extra = await Future.wait<Object?>([
+        _studentService
+            .getMyProfilePhotoBytes()
+            .then<Uint8List?>((b) => b)
+            .catchError((Object _) => null),
+        _checkinService
+            .getHistory()
+            .catchError((Object _) => <Map<String, dynamic>>[]),
+      ]);
       if (!mounted) return;
-      setState(() => _photoBytes = bytes);
-      try {
-        final history = await _checkinService.getHistory();
-        if (!mounted) return;
-        setState(() {
-          _diasTreinados = CheckinService.countDistinctTrainingDays(history);
-          _history = history;
-        });
-      } catch (_) {
-        if (!mounted) return;
-        setState(() {
-          _diasTreinados = null;
-          _history = [];
-        });
-      }
+      final bytes = extra[0] as Uint8List?;
+      final history = (extra[1] as List).cast<Map<String, dynamic>>();
+      setState(() {
+        _photoBytes = bytes;
+        _diasTreinados = CheckinService.countDistinctTrainingDays(history);
+        _history = history;
+      });
     } catch (e) {
       if (!mounted) return;
       setState(() {

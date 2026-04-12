@@ -11,8 +11,6 @@ import '../services/dashboard_service.dart';
 import '../utils/student_list_metrics.dart';
 import '../widgets/monthly_bar_chart.dart';
 
-/// Indicadores agregados + contagem real pela lista `GET /students/`.
-/// Envia snapshot para `POST /dashboard/analytics/headcount` quando o dia ou a contagem muda.
 class AnalyticsDashboardPage extends StatefulWidget {
   const AnalyticsDashboardPage({super.key});
 
@@ -83,7 +81,7 @@ class _AnalyticsDashboardPageState extends State<AnalyticsDashboardPage> {
       } else {
         setState(() {
           _headcountSyncHint =
-              'Backend sem POST /dashboard/analytics/headcount — histórico automático desligado.';
+              'Histórico automático de alunos não está disponível no servidor.';
         });
       }
     } catch (_) {
@@ -225,8 +223,7 @@ class _AnalyticsDashboardPageState extends State<AnalyticsDashboardPage> {
                             ),
                             const SizedBox(height: 12),
                             Text(
-                              'Confirme GET /dashboard/analytics. '
-                              'Opcional: POST /dashboard/analytics/headcount para histórico de alunos.',
+                              'Não foi possível carregar os indicadores. Verifique sua conexão ou tente mais tarde.',
                               style: TextStyle(
                                 fontSize: 13,
                                 height: 1.4,
@@ -309,7 +306,7 @@ class _AnalyticsDashboardPageState extends State<AnalyticsDashboardPage> {
         context,
         icon: Icons.show_chart_rounded,
         title: 'Receita da loja',
-        subtitle: 'Valores por mês retornados pela API',
+        subtitle: 'Valores por mês',
         child: MonthlyBarChart(
           points: vm.productRevenueByMonth,
           color: accent,
@@ -333,8 +330,7 @@ class _AnalyticsDashboardPageState extends State<AnalyticsDashboardPage> {
         context,
         icon: Icons.person_add_rounded,
         title: 'Alunos / matrículas',
-        subtitle:
-            'Série da API; a contagem em destaque vem da lista atual de alunos.',
+        subtitle: 'A contagem em destaque vem da lista atual de alunos.',
         child: MonthlyBarChart(
           points: vm.studentsByMonth,
           color: cs.tertiary,
@@ -343,9 +339,8 @@ class _AnalyticsDashboardPageState extends State<AnalyticsDashboardPage> {
       ),
       const SizedBox(height: 16),
       Text(
-        'A lista GET /students/ define quantos alunos ativos existem hoje. '
-        'Quando o total muda ou é um novo dia, o app envia esses números ao servidor '
-        '(POST /dashboard/analytics/headcount) para você guardar a evolução.',
+        'A contagem de alunos ativos vem da lista cadastrada na academia. '
+        'Quando muda ou em um novo dia, o app pode enviar o total ao servidor para histórico.',
         style: TextStyle(
           fontSize: 12,
           height: 1.4,
@@ -367,7 +362,7 @@ class _AnalyticsDashboardPageState extends State<AnalyticsDashboardPage> {
         icon: Icons.warning_amber_rounded,
         title: 'Lista de alunos indisponível',
         body:
-            'Não foi possível carregar GET /students/. A contagem e o envio ao servidor ficam desativados.',
+            'Não foi possível carregar a lista de alunos. A contagem ficará indisponível.',
       );
     }
 
@@ -413,7 +408,7 @@ class _AnalyticsDashboardPageState extends State<AnalyticsDashboardPage> {
           ),
           const SizedBox(height: 6),
           Text(
-            'Somatório de GET /students/ — exclui cancelados/inativos quando o status vem preenchido.',
+            'Contagem da lista da academia (exclui cancelados e inativos quando o status informa).',
             style: TextStyle(
               color: onGradMuted,
               fontSize: 12,
@@ -462,7 +457,7 @@ class _AnalyticsDashboardPageState extends State<AnalyticsDashboardPage> {
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      'Indicador paralelo na API (mês): ${vm.studentsThisMonth}',
+                      'Referência do servidor (mês): ${vm.studentsThisMonth}',
                       style: TextStyle(color: onGradMuted, fontSize: 12, height: 1.3),
                     ),
                   ),

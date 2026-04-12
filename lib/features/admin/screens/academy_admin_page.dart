@@ -30,9 +30,9 @@ class _AcademyAdminPageState extends State<AcademyAdminPage> {
     _loadTenantName();
   }
 
-  Future<void> _loadTenantName() async {
+  Future<void> _loadTenantName({bool forceRefresh = false}) async {
     try {
-      final cfg = await TenantService().getTenantConfig();
+      final cfg = await TenantService().getTenantConfig(forceRefresh: forceRefresh);
       final tenant = cfg["tenant"];
       if (tenant is Map) {
         final t = Map<String, dynamic>.from(tenant);
@@ -45,7 +45,7 @@ class _AcademyAdminPageState extends State<AcademyAdminPage> {
   }
 
   void _reload() {
-    _loadTenantName();
+    _loadTenantName(forceRefresh: true);
     setState(() {
       _studentsReloadToken++;
       _rankingFuture = _service.getRanking();

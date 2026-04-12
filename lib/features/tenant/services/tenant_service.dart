@@ -1,9 +1,22 @@
 import 'package:dio/dio.dart';
 
 import '../../../core/api/api_client.dart';
+import '../../../core/storage/gym_context_storage.dart';
 
 class TenantService {
   final Dio dio = ApiClient().dio;
+
+  static const Duration _configTtl = Duration(seconds: 45);
+  static Map<String, dynamic>? _cachedConfig;
+  static DateTime? _cachedAt;
+  static int? _cachedForGymId;
+
+  /// Limpa cache de config (logout, troca de academia, branding atualizado).
+  static void invalidateConfigCache() {
+    _cachedConfig = null;
+    _cachedAt = null;
+    _cachedForGymId = null;
+  }
 
   static Map<String, dynamic> _parseDataMap(dynamic body) {
     if (body is Map<String, dynamic> && body["data"] is Map) {
@@ -24,14 +37,27 @@ class TenantService {
   }
 
   /// Config agregada (tenant, flags, modalidades, etc.).
-  Future<Map<String, dynamic>> getTenantConfig() async {
+  /// Cache curto por `X-Gym-Id` para evitar GET duplicado ao abrir várias telas.
+  Future<Map<String, dynamic>> getTenantConfig({bool forceRefresh = false}) async {
+    final gymId = await GymContextStorage.instance.getGymId();
+    final now = DateTime.now();
+    if (!forceRefresh &&
+        _cachedConfig != null &&
+        _cachedAt != null &&
+        _cachedForGymId == gymId &&
+        now.difference(_cachedAt!) < _configTtl) {
+      return Map<String, dynamic>.from(_cachedConfig!);
+    }
     try {
       final response = await dio.get("/tenant/config");
       final m = _parseDataMap(response.data);
       if (m.isEmpty) {
         throw Exception("Resposta inválida do servidor.");
       }
-      return m;
+      _cachedConfig = m;
+      _cachedAt = now;
+      _cachedForGymId = gymId;
+      return Map<String, dynamic>.from(m);
     } on DioException catch (e) {
       throw Exception(_dioDetail(e));
     }
@@ -98,6 +124,7 @@ class TenantService {
       final response = await dio.patch("/tenant/branding", data: body);
       final data = response.data;
       if (data is Map<String, dynamic> && data["data"] is Map) {
+        invalidateConfigCache();
         return Map<String, dynamic>.from(data["data"] as Map);
       }
       throw Exception("Resposta inválida.");

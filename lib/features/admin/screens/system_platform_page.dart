@@ -393,7 +393,7 @@ class _SystemPlatformPageState extends State<SystemPlatformPage> {
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    "Cria tenant no servidor (POST /tenants).",
+                    "Registra uma nova academia no sistema.",
                     style: TextStyle(
                       fontSize: 12,
                       color: cs.onSurfaceVariant,

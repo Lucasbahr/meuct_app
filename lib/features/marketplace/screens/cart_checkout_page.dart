@@ -68,8 +68,7 @@ class _CartCheckoutPageState extends State<CartCheckoutPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text(
-              "Pedido criado, mas a URL de pagamento não veio no formato esperado. "
-              "Confira na API o JSON de checkout (ex.: approval_url, init_point).",
+              "Pedido criado, mas o link de pagamento não foi reconhecido. Tente de novo ou fale com o suporte.",
             ),
           ),
         );

@@ -8,7 +8,6 @@ import '../../../widgets/password_field_with_visibility.dart';
 import '../../marketplace/services/marketplace_service.dart';
 import '../widgets/admin_shell.dart';
 
-/// Pagamentos: Mercado Pago via OAuth (URL devolvida pela API) ou token manual; PayPal com Client ID/Secret.
 class AdminPaymentTab extends StatefulWidget {
   const AdminPaymentTab({super.key});
 
@@ -26,7 +25,7 @@ class _AdminPaymentTabState extends State<AdminPaymentTab> {
   bool _saving = false;
   bool _loadingStatus = true;
   bool _linking = false;
-  Map<String, dynamic>? _mpStatus;
+  Map<String, dynamic>? _gymPaymentConfig;
 
   @override
   void initState() {
@@ -43,47 +42,29 @@ class _AdminPaymentTabState extends State<AdminPaymentTab> {
     super.dispose();
   }
 
-  static Map<String, dynamic>? _mergeMercadoPagoStatus(
-    Map<String, dynamic>? gym,
-    Map<String, dynamic>? userOAuth,
-  ) {
-    if (gym == null && userOAuth == null) return null;
-    final out = <String, dynamic>{
-      if (gym != null) ...gym,
-    };
-    final gymLinked = gym?['has_access_token'] == true ||
-        gym?['connected'] == true ||
-        gym?['linked'] == true;
-    final userLinked = userOAuth?['has_access_token'] == true ||
-        userOAuth?['connected'] == true ||
-        userOAuth?['linked'] == true;
-    out['has_access_token'] = gymLinked || userLinked;
-    if (userOAuth != null && userOAuth['oauth_flow'] != null) {
-      out['oauth_flow'] = userOAuth['oauth_flow'];
-    }
-    return out;
+  static bool _hasProviderToken(Map<String, dynamic>? m) {
+    if (m == null) return false;
+    return m['has_access_token'] == true ||
+        m['connected'] == true ||
+        m['linked'] == true;
   }
 
   Future<void> _loadMpStatus() async {
     setState(() => _loadingStatus = true);
     try {
       Map<String, dynamic>? gym;
-      Map<String, dynamic>? userOAuth;
       try {
         gym = await _service.getPaymentConfig(provider: "mercado_pago");
       } catch (_) {}
-      try {
-        userOAuth = await _service.getMercadoPagoUserOAuthStatus();
-      } catch (_) {}
       if (!mounted) return;
       setState(() {
-        _mpStatus = _mergeMercadoPagoStatus(gym, userOAuth);
+        _gymPaymentConfig = gym;
         _loadingStatus = false;
       });
     } catch (_) {
       if (!mounted) return;
       setState(() {
-        _mpStatus = null;
+        _gymPaymentConfig = null;
         _loadingStatus = false;
       });
     }
@@ -92,7 +73,7 @@ class _AdminPaymentTabState extends State<AdminPaymentTab> {
   Future<void> _vincularMercadoPago() async {
     setState(() => _linking = true);
     try {
-      final optionalNext = CheckoutPaymentUrls.mercadoPagoUserOAuthNextUrlOrNull();
+      final optionalNext = CheckoutPaymentUrls.mercadoPagoGymOAuthNextUrlOrNull();
       final url = await _service.startMercadoPagoOAuth(
         nextUrl: optionalNext,
       );
@@ -108,10 +89,9 @@ class _AdminPaymentTabState extends State<AdminPaymentTab> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text(
-            'Autorize no Mercado Pago. O navegador abre a página da API (/mercadopago/callback); '
-            'depois volte ao app e toque em "Atualizar status".',
+            'Autorize no Mercado Pago e depois toque em Atualizar status.',
           ),
-          duration: Duration(seconds: 7),
+          duration: Duration(seconds: 6),
         ),
       );
     } catch (e) {
@@ -174,8 +154,76 @@ class _AdminPaymentTabState extends State<AdminPaymentTab> {
     return '${raw.substring(0, 10)}…${raw.substring(raw.length - 4)}';
   }
 
+  Widget _mpStatusRow(
+    BuildContext context, {
+    required String title,
+    required String subtitle,
+    required bool ok,
+    required String okLabel,
+    required String badLabel,
+  }) {
+    final cs = Theme.of(context).colorScheme;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: cs.surfaceContainerHigh.withValues(alpha: 0.65),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: ok
+              ? AppColors.success.withValues(alpha: 0.45)
+              : cs.outline.withValues(alpha: 0.28),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                ok ? Icons.verified_outlined : Icons.radio_button_unchecked,
+                size: 20,
+                color: ok ? AppColors.success : cs.onSurfaceVariant,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  title,
+                  style: TextStyle(
+                    fontWeight: FontWeight.w800,
+                    fontSize: 13,
+                    color: cs.onSurface,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            subtitle,
+            style: TextStyle(
+              fontSize: 11,
+              height: 1.35,
+              color: cs.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            ok ? okLabel : badLabel,
+            style: TextStyle(
+              fontSize: 12,
+              height: 1.35,
+              fontWeight: FontWeight.w600,
+              color: ok ? AppColors.success : cs.onSurface,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _mercadoPagoApiDetails(ColorScheme cs) {
-    final s = _mpStatus;
+    final s = _gymPaymentConfig;
     if (s == null || s.isEmpty) return const SizedBox.shrink();
 
     final userRef = _firstString(s, ['user_id', 'collector_id', 'seller_id', 'mp_user_id']);
@@ -206,7 +254,7 @@ class _AdminPaymentTabState extends State<AdminPaymentTab> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Dados da API (sem segredos)',
+            'Detalhes da conta',
             style: TextStyle(
               fontWeight: FontWeight.w700,
               fontSize: 12,
@@ -248,9 +296,7 @@ class _AdminPaymentTabState extends State<AdminPaymentTab> {
 
   @override
   Widget build(BuildContext context) {
-    final mpLinked = _mpStatus?['has_access_token'] == true ||
-        _mpStatus?['connected'] == true ||
-        _mpStatus?['linked'] == true;
+    final gymMpReady = _hasProviderToken(_gymPaymentConfig);
     final cs = Theme.of(context).colorScheme;
 
     return ListView(
@@ -260,9 +306,8 @@ class _AdminPaymentTabState extends State<AdminPaymentTab> {
           icon: Icons.payments_outlined,
           title: "Pagamentos",
           subtitle:
-              "Mercado Pago: o app chama GET /mercadopago/connect (URL em data.url), opcionalmente com "
-              "next_url. O redirect do app MP deve apontar para /mercadopago/callback na API. "
-              "PayPal: Client ID e Secret.",
+              "Conecte Mercado Pago ou PayPal para a academia receber na própria conta. "
+              "Na loja, os alunos pagam com o método que você configurar aqui.",
         ),
         const SizedBox(height: 16),
         SegmentedButton<String>(
@@ -285,13 +330,24 @@ class _AdminPaymentTabState extends State<AdminPaymentTab> {
               ),
             )
           else ...[
+            _mpStatusRow(
+              context,
+              title: "Conta Mercado Pago da academia",
+              subtitle:
+                  "Necessária para o carrinho e pagamentos da loja.",
+              ok: gymMpReady,
+              okLabel: "Conta configurada. A loja pode cobrar com Mercado Pago.",
+              badLabel:
+                  "Ainda não configurada. Use o botão abaixo ou o token manual.",
+            ),
+            const SizedBox(height: 16),
             FilledButton.icon(
               style: AdminPanelStyle.filledPrimary(context).merge(
                 const ButtonStyle(
                   minimumSize: WidgetStatePropertyAll(Size(double.infinity, 48)),
                 ),
               ),
-              onPressed: _linking || mpLinked ? null : _vincularMercadoPago,
+              onPressed: _linking ? null : _vincularMercadoPago,
               icon: _linking
                   ? SizedBox(
                       width: 22,
@@ -303,16 +359,14 @@ class _AdminPaymentTabState extends State<AdminPaymentTab> {
                     )
                   : const Icon(Icons.open_in_new, size: 22),
               label: Text(
-                mpLinked
-                    ? "Conta já vinculada"
-                    : (_linking ? "Abrindo Mercado Pago…" : "Abrir Mercado Pago e vincular conta"),
+                _linking
+                    ? "Abrindo Mercado Pago…"
+                    : "Conectar conta Mercado Pago",
               ),
             ),
             const SizedBox(height: 8),
             Text(
-              mpLinked
-                  ? 'Para trocar de conta, use o painel da API ou suporte. Toque em "Atualizar status" após autorizar no MP.'
-                  : 'A API devolve a URL em data.url (ou formatos legados). Opcional: token manual na academia abaixo.',
+              'Abra o link, autorize no app Mercado Pago e depois toque em «Atualizar status».',
               style: TextStyle(
                 color: cs.onSurfaceVariant,
                 fontSize: 12,
@@ -326,16 +380,16 @@ class _AdminPaymentTabState extends State<AdminPaymentTab> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Icon(
-                  mpLinked ? Icons.check_circle : Icons.link_off_outlined,
-                  color: mpLinked ? AppColors.success : cs.onSurfaceVariant,
+                  gymMpReady ? Icons.check_circle : Icons.warning_amber_rounded,
+                  color: gymMpReady ? AppColors.success : cs.tertiary,
                   size: 22,
                 ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    mpLinked
-                        ? "Mercado Pago conectado a esta academia."
-                        : "Ainda não há vínculo — use o botão acima e depois Atualizar status.",
+                    gymMpReady
+                        ? "A loja pode receber com Mercado Pago."
+                        : "Configure a conta acima para o carrinho aceitar Mercado Pago.",
                     style: TextStyle(
                       fontSize: 13,
                       color: cs.onSurface,
@@ -348,40 +402,16 @@ class _AdminPaymentTabState extends State<AdminPaymentTab> {
                 ),
               ],
             ),
-            const SizedBox(height: 8),
-            Text(
-              'No app Mercado Pago, Redirect URI = OAuth da API (não é o retorno do checkout):\n'
-              '${CheckoutPaymentUrls.mercadoPagoOAuthCallbackUrl()}\n'
-              '(servidor: MERCADOPAGO_OAUTH_REDIRECT_URI igual a essa URL). '
-              'Retorno do pedido pós-pagamento continua em ${CheckoutPaymentUrls.returnUrl()} '
-              '(PAYMENT_RETURN_URL /payment/mobile-return). '
-              'Se quiser next_url no OAuth, use --dart-define=MP_OAUTH_NEXT_URL=... '
-              'e o mesmo prefixo em MERCADOPAGO_OAUTH_SUCCESS_URL_PREFIX no backend.',
-              style: TextStyle(
-                color: cs.onSurfaceVariant.withValues(alpha: 0.85),
-                fontSize: 11,
-                height: 1.35,
-              ),
-            ),
-            const SizedBox(height: 20),
-            Text(
-              "Webhooks: o backend pode registrar notification_url na preferência MP; "
-              "confira a URL da API na documentação do projeto.",
-              style: TextStyle(
-                color: cs.onSurfaceVariant.withValues(alpha: 0.85),
-                fontSize: 11,
-              ),
-            ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 16),
             ExpansionTile(
               tilePadding: EdgeInsets.zero,
               initiallyExpanded: false,
               title: const Text(
-                "Sem OAuth no servidor? Colar credencial manualmente",
+                "Credencial manual (avançado)",
                 style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
               ),
               subtitle: const Text(
-                'Só se o fluxo OAuth não estiver disponível ou a API pedir credencial manual.',
+                'Use apenas se a equipe de suporte orientar.',
                 style: TextStyle(fontSize: 11),
               ),
               children: [
