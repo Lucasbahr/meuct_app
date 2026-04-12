@@ -15,6 +15,8 @@ class LoadingOverlay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final isLight = cs.brightness == Brightness.light;
     return Stack(
       children: [
         child,
@@ -23,20 +25,24 @@ class LoadingOverlay extends StatelessWidget {
             child: AbsorbPointer(
               child: DecoratedBox(
                 decoration: BoxDecoration(
-                  color: Colors.black.withValues(alpha: 0.45),
+                  color: isLight
+                      ? cs.inverseSurface.withValues(alpha: 0.72)
+                      : cs.scrim.withValues(alpha: 0.65),
                 ),
                 child: Center(
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const CircularProgressIndicator(),
+                      CircularProgressIndicator(color: cs.tertiary),
                       const SizedBox(height: 16),
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 24),
                         child: Text(
                           message,
-                          style: const TextStyle(
-                            color: Colors.white,
+                          style: TextStyle(
+                            color: isLight
+                                ? cs.onInverseSurface
+                                : cs.onSurface,
                             fontWeight: FontWeight.w600,
                           ),
                           textAlign: TextAlign.center,

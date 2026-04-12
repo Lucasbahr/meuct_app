@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 
+import '../../../shared/components/product_card.dart';
 import '../../marketplace/services/marketplace_service.dart';
 import '../widgets/admin_shell.dart';
 import 'admin_product_editor_page.dart';
@@ -80,18 +80,19 @@ class _AdminStoreTabState extends State<AdminStoreTab> {
 
   @override
   Widget build(BuildContext context) {
+    final accent = Theme.of(context).colorScheme.primary;
+
     return Stack(
       children: [
         RefreshIndicator(
           onRefresh: _load,
+          color: accent,
           child: _loading
               ? ListView(
                   physics: const AlwaysScrollableScrollPhysics(),
                   children: const [
                     SizedBox(height: 120),
-                    Center(
-                      child: CircularProgressIndicator(color: AdminPanelStyle.accent),
-                    ),
+                    Center(child: CircularProgressIndicator()),
                   ],
                 )
               : _error != null
@@ -103,6 +104,7 @@ class _AdminStoreTabState extends State<AdminStoreTab> {
                           child: AdminErrorPanel(
                             message: _error!,
                             onRetry: _load,
+                            buttonColor: accent,
                           ),
                         ),
                       ],
@@ -114,47 +116,18 @@ class _AdminStoreTabState extends State<AdminStoreTab> {
                             SizedBox(height: 48),
                             AdminEmptyHint(
                               message:
-                                  "Nenhum produto. Use + para cadastrar ou a categoria para organizar.",
+                                  "Nenhum produto. Use + para cadastrar ou organize por categoria.",
                               icon: Icons.inventory_2_outlined,
                             ),
                           ],
                         )
-                      : ListView.separated(
+                      : ListView.builder(
                           padding: const EdgeInsets.fromLTRB(16, 16, 16, 88),
                           itemCount: _products.length,
-                          separatorBuilder: (_, _) => const SizedBox(height: 8),
                           itemBuilder: (context, i) {
                             final p = _products[i];
-                            final name = (p["name"] ?? "").toString();
-                            final price = MarketplaceService.formatPrice(p["price"]);
-                            final active = p["is_active"] != false;
-                            final stock = p["stock"];
-                            final img = MarketplaceService.productPrimaryImageUrl(p);
-                            return ListTile(
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              tileColor: AdminPanelStyle.cardBgElevated,
-                              leading: img != null
-                                  ? ClipRRect(
-                                      borderRadius: BorderRadius.circular(8),
-                                      child: SizedBox(
-                                        width: 48,
-                                        height: 48,
-                                        child: CachedNetworkImage(
-                                          imageUrl: img,
-                                          fit: BoxFit.cover,
-                                          errorWidget: (_, _, _) => const Icon(Icons.image),
-                                        ),
-                                      ),
-                                    )
-                                  : const Icon(Icons.inventory_2_outlined),
-                              title: Text(name),
-                              subtitle: Text(
-                                "R\$ $price · Estoque: ${stock ?? "—"} · "
-                                "${active ? "Ativo" : "Inativo"}",
-                                style: const TextStyle(fontSize: 12),
-                              ),
+                            return ProductCard(
+                              product: p,
                               onTap: () async {
                                 final changed = await Navigator.push<bool>(
                                   context,

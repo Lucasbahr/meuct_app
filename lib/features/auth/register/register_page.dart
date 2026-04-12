@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../shared/themes/app_button_styles.dart';
 import '../../../widgets/password_field_with_visibility.dart';
 import '../repositories/auth_repository.dart';
 import '../../gyms/services/gym_service.dart';
@@ -107,6 +108,7 @@ class _RegisterPageState extends State<RegisterPage> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return Scaffold(
       appBar: AppBar(title: const Text("Criar conta")),
       body: Padding(
@@ -129,9 +131,9 @@ class _RegisterPageState extends State<RegisterPage> {
               decoration: const InputDecoration(labelText: "Confirmar senha"),
             ),
             const SizedBox(height: 16),
-            const Text(
+            Text(
               "Academia",
-              style: TextStyle(color: Colors.white70, fontSize: 12),
+              style: TextStyle(color: cs.onSurfaceVariant, fontSize: 12),
             ),
             const SizedBox(height: 6),
             if (_gymsLoading)
@@ -145,7 +147,7 @@ class _RegisterPageState extends State<RegisterPage> {
                         ? "Nenhuma academia listada. Será usado gym_id padrão (1)."
                         : "Lista de academias sem identificador válido. "
                             "Será usado gym_id padrão (1).",
-                style: const TextStyle(color: Colors.white54, fontSize: 12),
+                style: TextStyle(color: cs.onSurfaceVariant, fontSize: 12),
               )
             else
               DropdownButtonFormField<int>(
@@ -178,7 +180,7 @@ class _RegisterPageState extends State<RegisterPage> {
             const SizedBox(height: 20),
             SizedBox(
               width: double.infinity,
-              child: ElevatedButton(
+              child: FilledButton(
                 onPressed: _isLoading ? null : _register,
                 child: Text(_isLoading ? "Criando..." : "CRIAR CONTA"),
               ),
@@ -187,10 +189,8 @@ class _RegisterPageState extends State<RegisterPage> {
               onPressed: () {
                 Navigator.pushNamed(context, "/resend-verification");
               },
-              child: const Text(
-                "Nao recebeu o email? Reenviar",
-                style: TextStyle(color: Colors.red),
-              ),
+              style: AppButtonStyles.dangerText(),
+              child: const Text("Nao recebeu o email? Reenviar"),
             ),
           ],
         ),

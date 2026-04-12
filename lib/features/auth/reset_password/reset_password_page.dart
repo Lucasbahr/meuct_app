@@ -82,7 +82,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
             const SizedBox(height: 20),
             SizedBox(
               width: double.infinity,
-              child: ElevatedButton(
+              child: FilledButton(
                 onPressed: _isLoading ? null : _submit,
                 child: Text(_isLoading ? "Salvando..." : "REDEFINIR SENHA"),
               ),

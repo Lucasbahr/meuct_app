@@ -183,6 +183,46 @@ class MarketplaceService {
     }
   }
 
+  /// Extrai URL de autorização OAuth devolvida pela API (vários formatos / chaves).
+  ///
+  /// Aceita: string URL, mapa na raiz ou em `data`, chaves como [authorization_url],
+  /// [oauth_url], [auth_url], [connect_url], [url], ou objeto aninhado.
+  static String? mercadoPagoOAuthUrlFromResponse(dynamic raw) {
+    if (raw == null) return null;
+    if (raw is String) {
+      final s = raw.trim();
+      if (s.startsWith('http://') || s.startsWith('https://')) return s;
+      return null;
+    }
+    if (raw is Map) {
+      final m = Map<String, dynamic>.from(raw);
+      const keys = <String>[
+        'authorization_url',
+        'oauth_url',
+        'auth_url',
+        'connect_url',
+        'login_url',
+        'redirect_to',
+        'url',
+      ];
+      for (final k in keys) {
+        final v = m[k];
+        if (v is String && v.trim().isNotEmpty) {
+          final s = v.trim();
+          if (s.startsWith('http://') || s.startsWith('https://')) return s;
+        }
+      }
+      for (final nestKey in ['data', 'oauth', 'mercado_pago', 'payload']) {
+        final nested = m[nestKey];
+        if (nested != null && nested != raw) {
+          final inner = mercadoPagoOAuthUrlFromResponse(nested);
+          if (inner != null) return inner;
+        }
+      }
+    }
+    return null;
+  }
+
   /// Lê status (sem expor segredos). `GET /payment/config`.
   Future<Map<String, dynamic>?> getPaymentConfig({
     String provider = "mercado_pago",
@@ -202,35 +242,65 @@ class MarketplaceService {
     }
   }
 
-  /// Inicia OAuth Mercado Pago (app da plataforma no servidor). Abra [authorization_url] no navegador.
-  Future<String> startMercadoPagoOAuth({String? nextUrl}) async {
+  /// Vínculo OAuth Mercado Pago do **usuário logado** (admin da academia). `GET /mercadopago/status`.
+  Future<Map<String, dynamic>?> getMercadoPagoUserOAuthStatus() async {
     try {
-      final body = <String, dynamic>{};
-      if (nextUrl != null && nextUrl.trim().isNotEmpty) {
-        body["next_url"] = nextUrl.trim();
+      final response = await dio.get("/mercadopago/status");
+      final data = response.data;
+      if (data is Map<String, dynamic> && data["data"] is Map) {
+        return Map<String, dynamic>.from(data["data"] as Map);
       }
-      final response = await dio.post(
-        "/payment/mercado-pago/oauth/start",
-        data: body.isEmpty ? {} : body,
+      return null;
+    } on DioException catch (e) {
+      throw _mapError(e, "Falha ao consultar vínculo Mercado Pago (usuário).");
+    }
+  }
+
+  /// Inicia OAuth Mercado Pago no servidor. Abre a URL retornada no navegador/in-app.
+  ///
+  /// `GET /mercadopago/connect` com query opcional `next_url` (primeiro não vazio entre
+  /// [nextUrl], [returnUrl], [redirectUri]). Omitir tudo evita exigir
+  /// `MERCADOPAGO_OAUTH_SUCCESS_URL_PREFIX` no backend; o MP redireciona para
+  /// `…/mercadopago/callback` na API.
+  Future<String> startMercadoPagoOAuth({
+    String? nextUrl,
+    String? returnUrl,
+    String? redirectUri,
+  }) async {
+    try {
+      String? picked;
+      for (final s in [nextUrl, returnUrl, redirectUri]) {
+        final t = s?.trim();
+        if (t != null && t.isNotEmpty) {
+          picked = t;
+          break;
+        }
+      }
+
+      final response = await dio.get(
+        '/mercadopago/connect',
+        queryParameters: {
+          if (picked != null) 'next_url': picked,
+        },
       );
       final data = response.data;
       if (data is Map<String, dynamic>) {
-        if (data["success"] == false) {
+        if (data['success'] == false) {
           throw AppException(
-            data["message"]?.toString().trim().isNotEmpty == true
-                ? data["message"].toString()
-                : "Não foi possível iniciar o vínculo.",
+            data['message']?.toString().trim().isNotEmpty == true
+                ? data['message'].toString()
+                : 'Não foi possível iniciar o vínculo.',
           );
         }
-        if (data["data"] is Map) {
-          final m = data["data"] as Map;
-          final url = m["authorization_url"]?.toString();
-          if (url != null && url.isNotEmpty) return url;
-        }
+        final url = mercadoPagoOAuthUrlFromResponse(data);
+        if (url != null) return url;
+      } else if (data is String) {
+        final url = mercadoPagoOAuthUrlFromResponse(data);
+        if (url != null) return url;
       }
-      throw const AppException("Resposta inválida ao iniciar OAuth.");
+      throw const AppException('Resposta inválida ao iniciar OAuth (sem URL).');
     } on DioException catch (e) {
-      throw _mapError(e, "Falha ao iniciar vínculo Mercado Pago.");
+      throw _mapError(e, 'Falha ao iniciar vínculo Mercado Pago.');
     }
   }
 

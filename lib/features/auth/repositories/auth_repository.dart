@@ -1,6 +1,4 @@
 import '../services/auth_service.dart';
-import '../../../core/auth/session_service.dart';
-import '../../../core/branding/app_branding.dart';
 import '../../../core/storage/gym_context_storage.dart';
 import '../../../core/storage/token_storage.dart';
 import '../../marketplace/marketplace_cart_store.dart';
@@ -19,15 +17,10 @@ class AuthRepository {
     final token = await _service.login(email, password);
     await _storage.saveToken(token);
     await GymContextStorage.instance.syncFromAccessToken(token);
-    // Admin sistema: tema/tenant exige X-Gym-Id; refresh após escolher academia na UI.
-    if (!await SessionService().isSystemAdmin()) {
-      await AppBrandingController.instance.refreshFromApi();
-    }
   }
 
   Future<void> logout() async {
     MarketplaceCartStore.clear();
-    AppBrandingController.instance.resetToDefault();
     await GymContextStorage.instance.clear();
     await _storage.clearToken();
   }

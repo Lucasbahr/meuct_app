@@ -60,6 +60,7 @@ class _AcademyInfoPageState extends State<AcademyInfoPage> {
   }
 
   List<Widget> _buildAboutSection() {
+    final cs = Theme.of(context).colorScheme;
     final t = _tenantInfo;
     if (t == null) {
       return const [
@@ -85,9 +86,10 @@ class _AcademyInfoPageState extends State<AcademyInfoPage> {
       ],
       Text(
         (t["nome"] ?? "Academia").toString(),
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 22,
           fontWeight: FontWeight.bold,
+          color: cs.onSurface,
         ),
       ),
       const SizedBox(height: 12),
@@ -96,8 +98,8 @@ class _AcademyInfoPageState extends State<AcademyInfoPage> {
             ? "A administração ainda não cadastrou a descrição da academia. "
                 "Peça para atualizarem em Painel admin → Academia."
             : desc,
-        style: const TextStyle(
-          color: Colors.white70,
+        style: TextStyle(
+          color: cs.onSurfaceVariant,
           height: 1.45,
         ),
       ),
@@ -106,7 +108,7 @@ class _AcademyInfoPageState extends State<AcademyInfoPage> {
 
   @override
   Widget build(BuildContext context) {
-    final primary = Theme.of(context).colorScheme.primary;
+    final cs = Theme.of(context).colorScheme;
 
     return DefaultTabController(
       length: 2,
@@ -114,9 +116,9 @@ class _AcademyInfoPageState extends State<AcademyInfoPage> {
         appBar: AppBar(
           title: const Text("Academia"),
           bottom: TabBar(
-            indicatorColor: primary,
-            labelColor: Colors.white,
-            unselectedLabelColor: Colors.white54,
+            indicatorColor: cs.tertiary,
+            labelColor: cs.onSurface,
+            unselectedLabelColor: cs.onSurfaceVariant,
             tabs: const [
               Tab(text: "Sobre"),
               Tab(text: "Grade de aulas"),
@@ -124,7 +126,7 @@ class _AcademyInfoPageState extends State<AcademyInfoPage> {
           ),
         ),
         body: _loading
-            ? const Center(child: CircularProgressIndicator())
+            ? Center(child: CircularProgressIndicator(color: cs.tertiary))
             : _error != null
                 ? Center(
                     child: Padding(
@@ -156,12 +158,14 @@ class _AcademyInfoPageState extends State<AcademyInfoPage> {
                         child: _grouped.isEmpty
                             ? ListView(
                                 physics: const AlwaysScrollableScrollPhysics(),
-                                children: const [
-                                  SizedBox(height: 80),
+                                children: [
+                                  const SizedBox(height: 80),
                                   Center(
                                     child: Text(
                                       "Nenhum horário publicado na grade.",
-                                      style: TextStyle(color: Colors.white54),
+                                      style: TextStyle(
+                                        color: cs.onSurfaceVariant,
+                                      ),
                                     ),
                                   ),
                                 ],

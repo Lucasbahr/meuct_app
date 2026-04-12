@@ -5,9 +5,6 @@ import '../../auth/repositories/auth_repository.dart';
 import '../../dashboard/services/dashboard_service.dart';
 import '../widgets/admin_shell.dart';
 
-const _kAccent = AdminPanelStyle.accent;
-const _kCard = Color(0xFF1A1A1A);
-
 /// Visão geral para admin: resumo da academia, mensalidades (API) e métricas de alunos.
 class AdminDashboardTab extends StatefulWidget {
   const AdminDashboardTab({super.key});
@@ -92,37 +89,45 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> {
         .toList();
   }
 
-  Widget _metricCard(String label, String value, {IconData? icon}) {
+  Widget _metricCard(
+    BuildContext context,
+    String label,
+    String value, {
+    IconData? icon,
+  }) {
+    final cs = Theme.of(context).colorScheme;
     return Expanded(
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: _kCard,
+          color: cs.surfaceContainerHigh,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: Colors.white10),
+          border: Border.all(
+            color: cs.outline.withValues(alpha: 0.28),
+          ),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             if (icon != null)
-              Icon(icon, size: 20, color: _kAccent.withValues(alpha: 0.9)),
+              Icon(icon, size: 20, color: cs.tertiary.withValues(alpha: 0.95)),
             if (icon != null) const SizedBox(height: 8),
             FittedBox(
               fit: BoxFit.scaleDown,
               alignment: Alignment.centerLeft,
               child: Text(
                 value,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.w800,
-                  color: _kAccent,
+                  color: cs.onSurface,
                 ),
               ),
             ),
             const SizedBox(height: 4),
             Text(
               label,
-              style: const TextStyle(color: Colors.white54, fontSize: 12),
+              style: TextStyle(color: cs.onSurfaceVariant, fontSize: 12),
             ),
           ],
         ),
@@ -130,7 +135,8 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> {
     );
   }
 
-  Widget _sectionTitle(String title, {String? subtitle}) {
+  Widget _sectionTitle(BuildContext context, String title, {String? subtitle}) {
+    final cs = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.only(bottom: 10, top: 4),
       child: Column(
@@ -138,23 +144,29 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> {
         children: [
           Text(
             title,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 17,
               fontWeight: FontWeight.w700,
               letterSpacing: -0.2,
+              color: cs.onSurface,
             ),
           ),
           if (subtitle != null)
             Text(
               subtitle,
-              style: const TextStyle(color: Colors.white54, fontSize: 12),
+              style: TextStyle(color: cs.onSurfaceVariant, fontSize: 12),
             ),
         ],
       ),
     );
   }
 
-  Widget _alertTile(Map<String, dynamic> row, {required bool overdue}) {
+  Widget _alertTile(
+    BuildContext context,
+    Map<String, dynamic> row, {
+    required bool overdue,
+  }) {
+    final cs = Theme.of(context).colorScheme;
     final name = (row["student_name"] ?? "Aluno").toString();
     final plan = (row["plan_name"] ?? "").toString();
     final due = row["due_date"]?.toString() ?? "—";
@@ -164,22 +176,31 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> {
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: _kCard,
+        color: cs.surfaceContainerHigh,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: overdue
-              ? Colors.redAccent.withValues(alpha: 0.45)
-              : Colors.amber.withValues(alpha: 0.35),
+              ? cs.error.withValues(alpha: 0.55)
+              : const Color(0xFFF59E0B).withValues(alpha: 0.45),
         ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(name, style: const TextStyle(fontWeight: FontWeight.w600)),
+          Text(
+            name,
+            style: TextStyle(
+              fontWeight: FontWeight.w600,
+              color: cs.onSurface,
+            ),
+          ),
           const SizedBox(height: 4),
           Text(
             plan,
-            style: const TextStyle(color: Colors.white70, fontSize: 13),
+            style: TextStyle(
+              color: cs.onSurfaceVariant,
+              fontSize: 13,
+            ),
           ),
           const SizedBox(height: 6),
           Row(
@@ -187,18 +208,21 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> {
               Icon(
                 Icons.event_outlined,
                 size: 14,
-                color: overdue ? Colors.redAccent : Colors.amber,
+                color: overdue ? cs.error : const Color(0xFFF59E0B),
               ),
               const SizedBox(width: 4),
-              Text("Venc.: $due", style: const TextStyle(fontSize: 12)),
+              Text(
+                "Venc.: $due",
+                style: TextStyle(fontSize: 12, color: cs.onSurface),
+              ),
               if (amount != null) ...[
                 const SizedBox(width: 12),
                 Text(
                   "R\$ $amount",
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
-                    color: Colors.white70,
+                    color: cs.onSurfaceVariant,
                   ),
                 ),
               ],
@@ -211,7 +235,7 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> {
                 reason,
                 style: TextStyle(
                   fontSize: 11,
-                  color: Colors.white.withValues(alpha: 0.45),
+                  color: cs.onSurfaceVariant.withValues(alpha: 0.85),
                 ),
               ),
             ),
@@ -222,14 +246,17 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     if (_loading) {
-      return const Center(child: CircularProgressIndicator(color: _kAccent));
+      return Center(
+        child: CircularProgressIndicator(color: cs.tertiary),
+      );
     }
     if (_error != null) {
       return AdminErrorPanel(
         message: _error!,
         onRetry: _load,
-        accent: _kAccent,
+        buttonColor: cs.primary,
       );
     }
 
@@ -240,7 +267,7 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> {
     final rep = _studentsReport;
 
     return RefreshIndicator(
-      color: _kAccent,
+      color: cs.tertiary,
       onRefresh: _load,
       child: ListView(
         padding: const EdgeInsets.all(16),
@@ -250,20 +277,22 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> {
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.white10),
+              border: Border.all(
+                color: cs.outline.withValues(alpha: 0.28),
+              ),
               gradient: LinearGradient(
                 colors: [
-                  _kAccent.withValues(alpha: 0.2),
+                  cs.tertiary.withValues(alpha: 0.14),
                   Colors.transparent,
                 ],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
             ),
-            child: const Row(
+            child: Row(
               children: [
-                Icon(Icons.insights_outlined, color: _kAccent, size: 32),
-                SizedBox(width: 12),
+                Icon(Icons.insights_outlined, color: cs.tertiary, size: 32),
+                const SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -273,12 +302,16 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> {
                         style: TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.w800,
+                          color: cs.onSurface,
                         ),
                       ),
-                      SizedBox(height: 4),
+                      const SizedBox(height: 4),
                       Text(
                         "Resumo operacional e mensalidades da sua academia.",
-                        style: TextStyle(color: Colors.white60, fontSize: 13),
+                        style: TextStyle(
+                          color: cs.onSurfaceVariant,
+                          fontSize: 13,
+                        ),
                       ),
                     ],
                   ),
@@ -288,22 +321,25 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> {
           ),
           const SizedBox(height: 20),
           if (resumo is Map<String, dynamic>) ...[
-            _sectionTitle("Atividade"),
+            _sectionTitle(context, "Atividade"),
             Row(
               children: [
                 _metricCard(
+                  context,
                   "Alunos ativos",
                   "${resumo["alunos_ativos"] ?? 0}",
                   icon: Icons.groups_outlined,
                 ),
                 const SizedBox(width: 8),
                 _metricCard(
+                  context,
                   "Check-in hoje",
                   "${resumo["checkins_hoje"] ?? 0}",
                   icon: Icons.today_outlined,
                 ),
                 const SizedBox(width: 8),
                 _metricCard(
+                  context,
                   "Check-in 7 dias",
                   "${resumo["checkins_ultimos_7_dias"] ?? 0}",
                   icon: Icons.date_range_outlined,
@@ -314,17 +350,20 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> {
           ],
           if (rep != null && rep.isNotEmpty) ...[
             _sectionTitle(
+              context,
               "Assinaturas (relatório)",
               subtitle: _reportError,
             ),
             Row(
               children: [
                 _metricCard(
+                  context,
                   "Total",
                   "${rep["total_students"] ?? "—"}",
                 ),
                 const SizedBox(width: 10),
                 _metricCard(
+                  context,
                   "Ativos",
                   "${rep["active_students"] ?? "—"}",
                 ),
@@ -334,11 +373,13 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> {
             Row(
               children: [
                 _metricCard(
+                  context,
                   "Inadimplentes",
                   "${rep["overdue_students"] ?? "—"}",
                 ),
                 const SizedBox(width: 10),
                 _metricCard(
+                  context,
                   "Cancelados",
                   "${rep["canceled_students"] ?? "—"}",
                 ),
@@ -350,10 +391,14 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> {
               padding: const EdgeInsets.only(bottom: 16),
               child: Text(
                 "Relatório de alunos indisponível: $_reportError",
-                style: const TextStyle(color: Colors.white38, fontSize: 12),
+                style: TextStyle(
+                  color: cs.onSurfaceVariant.withValues(alpha: 0.65),
+                  fontSize: 12,
+                ),
               ),
             ),
           _sectionTitle(
+            context,
             "Mensalidades",
             subtitle: "Vencimentos e atrasos (API /students/alerts)",
           ),
@@ -366,11 +411,11 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> {
               ),
             ),
           if (dueSoon.isEmpty && overdue.isEmpty && _alertsError == null)
-            const Padding(
-              padding: EdgeInsets.only(bottom: 16),
+            Padding(
+              padding: const EdgeInsets.only(bottom: 16),
               child: Text(
                 "Nenhum alerta de mensalidade no momento.",
-                style: TextStyle(color: Colors.white54),
+                style: TextStyle(color: cs.onSurfaceVariant),
               ),
             ),
           if (dueSoon.isNotEmpty) ...[
@@ -378,26 +423,26 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> {
               "Vencendo (${dueSoon.length})",
               style: const TextStyle(
                 fontWeight: FontWeight.w600,
-                color: Colors.amber,
+                color: Color(0xFFF59E0B),
               ),
             ),
             const SizedBox(height: 8),
-            ...dueSoon.map((r) => _alertTile(r, overdue: false)),
+            ...dueSoon.map((r) => _alertTile(context, r, overdue: false)),
             const SizedBox(height: 12),
           ],
           if (overdue.isNotEmpty) ...[
             Text(
               "Em atraso (${overdue.length})",
-              style: const TextStyle(
+              style: TextStyle(
                 fontWeight: FontWeight.w600,
-                color: Colors.redAccent,
+                color: cs.error,
               ),
             ),
             const SizedBox(height: 8),
-            ...overdue.map((r) => _alertTile(r, overdue: true)),
+            ...overdue.map((r) => _alertTile(context, r, overdue: true)),
             const SizedBox(height: 16),
           ],
-          _sectionTitle("Últimos acessos ao app"),
+          _sectionTitle(context, "Últimos acessos ao app"),
           if (logins is List && logins.isNotEmpty)
             ...logins.take(10).map((raw) {
               if (raw is! Map) return const SizedBox.shrink();
@@ -405,28 +450,40 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> {
               return Container(
                 margin: const EdgeInsets.only(bottom: 6),
                 decoration: BoxDecoration(
-                  color: _kCard,
+                  color: cs.surfaceContainerHigh,
                   borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: Colors.white10),
+                  border: Border.all(
+                    color: cs.outline.withValues(alpha: 0.25),
+                  ),
                 ),
                 child: ListTile(
                   dense: true,
-                  leading: const Icon(Icons.login_rounded, color: Colors.white38, size: 20),
+                  leading: Icon(
+                    Icons.login_rounded,
+                    color: cs.onSurfaceVariant.withValues(alpha: 0.65),
+                    size: 20,
+                  ),
                   title: Text(
                     m["email"]?.toString() ?? "—",
-                    style: const TextStyle(fontSize: 13),
+                    style: TextStyle(fontSize: 13, color: cs.onSurface),
                   ),
                   subtitle: Text(
                     "${m["role"] ?? ""} · ${m["ultimo_login_em"] ?? "—"}",
-                    style: const TextStyle(fontSize: 11),
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: cs.onSurfaceVariant,
+                    ),
                   ),
                 ),
               );
             })
           else
-            const Text(
+            Text(
               "Sem registros de login.",
-              style: TextStyle(color: Colors.white38, fontSize: 13),
+              style: TextStyle(
+                color: cs.onSurfaceVariant.withValues(alpha: 0.65),
+                fontSize: 13,
+              ),
             ),
           const SizedBox(height: 24),
         ],

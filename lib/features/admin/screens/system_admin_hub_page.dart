@@ -8,8 +8,6 @@ import '../widgets/admin_shell.dart';
 import 'academy_admin_page.dart';
 import 'system_platform_page.dart';
 
-const _kAccent = AdminPanelStyle.accent;
-
 /// Entrada separada para **admin de sistema**: plataforma (tenants) vs admin da academia ativa.
 class SystemAdminHubPage extends StatefulWidget {
   const SystemAdminHubPage({super.key});
@@ -65,6 +63,7 @@ class _SystemAdminHubPageState extends State<SystemAdminHubPage> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return Scaffold(
       appBar: AppBar(
         title: const Text("Central do administrador"),
@@ -77,7 +76,9 @@ class _SystemAdminHubPageState extends State<SystemAdminHubPage> {
         ],
       ),
       body: _loading
-          ? const Center(child: CircularProgressIndicator(color: _kAccent))
+          ? Center(
+              child: CircularProgressIndicator(color: cs.tertiary),
+            )
           : ListView(
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
               children: [
@@ -94,7 +95,9 @@ class _SystemAdminHubPageState extends State<SystemAdminHubPage> {
                             style: const TextStyle(fontSize: 12),
                           ),
                           visualDensity: VisualDensity.compact,
-                          side: BorderSide(color: Colors.white.withValues(alpha: 0.2)),
+                          side: BorderSide(
+                            color: cs.outline.withValues(alpha: 0.35),
+                          ),
                         )
                       : Chip(
                           label: const Text("Sem academia ativa"),
@@ -126,7 +129,7 @@ class _SystemAdminHubPageState extends State<SystemAdminHubPage> {
                   icon: Icons.groups_outlined,
                   title: "Administrar esta academia",
                   subtitle:
-                      "Alunos, mensalidades, loja, grade, aparência — o mesmo painel usado pelo admin da academia.",
+                      "Alunos, mensalidades, loja, grade — o mesmo painel usado pelo admin da academia.",
                   onTap: () {
                     Navigator.of(context).push<void>(
                       MaterialPageRoute<void>(
@@ -147,8 +150,9 @@ class _SystemAdminHubPageState extends State<SystemAdminHubPage> {
     required String subtitle,
     required VoidCallback onTap,
   }) {
+    final cs = Theme.of(context).colorScheme;
     return Material(
-      color: AdminPanelStyle.cardBgElevated,
+      color: cs.surfaceContainerHigh,
       borderRadius: BorderRadius.circular(16),
       child: InkWell(
         onTap: onTap,
@@ -161,10 +165,10 @@ class _SystemAdminHubPageState extends State<SystemAdminHubPage> {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: _kAccent.withValues(alpha: 0.2),
+                  color: cs.tertiary.withValues(alpha: 0.16),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Icon(icon, color: _kAccent, size: 28),
+                child: Icon(icon, color: cs.tertiary, size: 28),
               ),
               const SizedBox(width: 16),
               Expanded(
@@ -173,9 +177,10 @@ class _SystemAdminHubPageState extends State<SystemAdminHubPage> {
                   children: [
                     Text(
                       title,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontWeight: FontWeight.w700,
                         fontSize: 17,
+                        color: cs.onSurface,
                       ),
                     ),
                     const SizedBox(height: 6),
@@ -184,7 +189,7 @@ class _SystemAdminHubPageState extends State<SystemAdminHubPage> {
                       style: TextStyle(
                         fontSize: 13,
                         height: 1.35,
-                        color: Colors.white.withValues(alpha: 0.65),
+                        color: cs.onSurfaceVariant,
                       ),
                     ),
                     const SizedBox(height: 10),
@@ -193,13 +198,13 @@ class _SystemAdminHubPageState extends State<SystemAdminHubPage> {
                         Text(
                           "Abrir",
                           style: TextStyle(
-                            color: Theme.of(context).colorScheme.primary,
+                            color: cs.primary,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
                         Icon(
                           Icons.chevron_right,
-                          color: Theme.of(context).colorScheme.primary,
+                          color: cs.primary,
                           size: 20,
                         ),
                       ],

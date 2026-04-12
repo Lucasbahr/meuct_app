@@ -94,10 +94,11 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return Scaffold(
       appBar: AppBar(title: const Text("Completar perfil")),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? Center(child: CircularProgressIndicator(color: cs.tertiary))
           : Stack(
               children: [
                 Padding(
@@ -113,9 +114,11 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
                             style: const TextStyle(color: Colors.redAccent),
                           ),
                         ),
-                      const Text(
+                      Text(
                         "Para entrar na tela inicial, precisamos do seu nome.",
-                        style: TextStyle(color: Colors.white70),
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
                       ),
                       const SizedBox(height: 16),
                       TextField(
@@ -125,10 +128,10 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
                       const SizedBox(height: 20),
                       SizedBox(
                         width: double.infinity,
-                        child: ElevatedButton(
+                        child: FilledButton(
                           onPressed: _isSaving ? null : _save,
                           child: _isSaving
-                              ? const Row(
+                              ? Row(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
@@ -137,11 +140,13 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
                                       height: 20,
                                       child: CircularProgressIndicator(
                                         strokeWidth: 2,
-                                        color: Colors.white,
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .onPrimary,
                                       ),
                                     ),
-                                    SizedBox(width: 12),
-                                    Text("Salvando..."),
+                                    const SizedBox(width: 12),
+                                    const Text("Salvando..."),
                                   ],
                                 )
                               : const Text("Salvar"),
@@ -155,18 +160,22 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
                     child: AbsorbPointer(
                       child: DecoratedBox(
                         decoration: BoxDecoration(
-                          color: Colors.black.withValues(alpha: 0.45),
+                          color: cs.brightness == Brightness.light
+                              ? cs.inverseSurface.withValues(alpha: 0.72)
+                              : cs.scrim.withValues(alpha: 0.65),
                         ),
-                        child: const Center(
+                        child: Center(
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              CircularProgressIndicator(),
-                              SizedBox(height: 16),
+                              CircularProgressIndicator(color: cs.tertiary),
+                              const SizedBox(height: 16),
                               Text(
                                 "Salvando...",
                                 style: TextStyle(
-                                  color: Colors.white,
+                                  color: cs.brightness == Brightness.light
+                                      ? cs.onInverseSurface
+                                      : cs.onSurface,
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),

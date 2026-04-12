@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/theme/app_colors.dart';
+
 import '../../../core/api/dio_unauthorized.dart';
 import '../../auth/repositories/auth_repository.dart';
 import '../services/training_service.dart';
@@ -53,6 +55,7 @@ class _RankingPageState extends State<RankingPage> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return Scaffold(
       appBar: AppBar(title: const Text("Ranking (XP)")),
       body: RefreshIndicator(
@@ -70,7 +73,10 @@ class _RankingPageState extends State<RankingPage> {
                     physics: const AlwaysScrollableScrollPhysics(),
                     padding: const EdgeInsets.all(24),
                     children: [
-                      Text(_error!, style: const TextStyle(color: Colors.white70)),
+                      Text(
+                        _error!,
+                        style: TextStyle(color: cs.onSurfaceVariant),
+                      ),
                       const SizedBox(height: 16),
                       FilledButton(onPressed: _load, child: const Text("Tentar novamente")),
                     ],
@@ -78,12 +84,12 @@ class _RankingPageState extends State<RankingPage> {
                 : _rows.isEmpty
                     ? ListView(
                         physics: const AlwaysScrollableScrollPhysics(),
-                        children: const [
-                          SizedBox(height: 120),
+                        children: [
+                          const SizedBox(height: 120),
                           Center(
                             child: Text(
                               "Ninguém no ranking ainda.",
-                              style: TextStyle(color: Colors.white54),
+                              style: TextStyle(color: cs.onSurfaceVariant),
                             ),
                           ),
                         ],
@@ -95,8 +101,9 @@ class _RankingPageState extends State<RankingPage> {
                         itemBuilder: (context, i) {
                           final r = _rows[i];
                           final pos = r["position"] ?? i + 1;
+                          final scheme = Theme.of(context).colorScheme;
                           return ListTile(
-                            tileColor: const Color(0xFF1E1E1E),
+                            tileColor: scheme.surfaceContainerHigh,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
@@ -107,11 +114,13 @@ class _RankingPageState extends State<RankingPage> {
                                       ? const Color(0xFFC0C0C0)
                                       : pos == 3
                                           ? const Color(0xFFCD7F32)
-                                          : const Color(0xFF333333),
+                                          : scheme.surfaceContainerHighest,
                               child: Text(
                                 "$pos",
                                 style: TextStyle(
-                                  color: pos <= 3 ? Colors.black : Colors.white,
+                                  color: pos <= 3
+                                      ? AppPalette.lightPrimary
+                                      : scheme.onSurface,
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
@@ -119,7 +128,10 @@ class _RankingPageState extends State<RankingPage> {
                             title: Text(r["nome"]?.toString() ?? "—"),
                             subtitle: Text(
                               r["email"]?.toString() ?? "",
-                              style: const TextStyle(fontSize: 11),
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: scheme.onSurfaceVariant,
+                              ),
                             ),
                             trailing: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
@@ -127,16 +139,16 @@ class _RankingPageState extends State<RankingPage> {
                               children: [
                                 Text(
                                   "${r["total_xp"] ?? 0} XP",
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontWeight: FontWeight.bold,
-                                    color: Color(0xFFE53935),
+                                    color: scheme.primary,
                                   ),
                                 ),
                                 Text(
                                   "Nv. ${r["level"] ?? 0}",
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 11,
-                                    color: Colors.white54,
+                                    color: scheme.onSurfaceVariant,
                                   ),
                                 ),
                               ],

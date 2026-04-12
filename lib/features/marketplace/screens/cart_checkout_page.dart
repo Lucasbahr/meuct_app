@@ -114,14 +114,15 @@ class _CartCheckoutPageState extends State<CartCheckoutPage> {
   @override
   Widget build(BuildContext context) {
     final lines = MarketplaceCartStore.lines;
+    final cs = Theme.of(context).colorScheme;
 
     return Scaffold(
       appBar: AppBar(title: const Text("Carrinho")),
       body: lines.isEmpty
-          ? const Center(
+          ? Center(
               child: Text(
                 "Nenhum item no carrinho.",
-                style: TextStyle(color: Colors.white54),
+                style: TextStyle(color: cs.onSurfaceVariant),
               ),
             )
           : Column(
@@ -192,9 +193,9 @@ class _CartCheckoutPageState extends State<CartCheckoutPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      const Text(
+                      Text(
                         "Forma de pagamento",
-                        style: TextStyle(color: Colors.white70),
+                        style: TextStyle(color: cs.onSurfaceVariant),
                       ),
                       const SizedBox(height: 8),
                       SegmentedButton<String>(

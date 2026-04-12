@@ -30,13 +30,13 @@ class AdminCommercialTab extends StatelessWidget {
             child: Column(
               children: [
                 Material(
-                  color: Colors.black.withValues(alpha: 0.2),
+                  color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.6),
                   child: TabBar(
                     isScrollable: true,
-                    labelColor: Colors.white,
-                    unselectedLabelColor: Colors.white54,
+                    labelColor: accent,
+                    unselectedLabelColor: Theme.of(context).colorScheme.onSurfaceVariant,
                     indicatorColor: accent,
-                    dividerColor: Colors.white.withValues(alpha: 0.06),
+                    dividerColor: Theme.of(context).colorScheme.outline.withValues(alpha: 0.12),
                     tabs: const [
                       Tab(icon: Icon(Icons.inventory_2_outlined, size: 18), text: "Produtos"),
                       Tab(icon: Icon(Icons.account_balance_wallet_outlined, size: 18), text: "Pagamentos"),

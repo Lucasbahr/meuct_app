@@ -66,7 +66,7 @@ class _ResendVerificationPageState extends State<ResendVerificationPage> {
             const SizedBox(height: 20),
             SizedBox(
               width: double.infinity,
-              child: ElevatedButton(
+              child: FilledButton(
                 onPressed: _isLoading ? null : _resend,
                 child: Text(_isLoading ? "Enviando..." : "REENVIAR EMAIL"),
               ),

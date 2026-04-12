@@ -57,6 +57,7 @@ class _MarketplacePageState extends State<MarketplacePage> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return Scaffold(
       appBar: AppBar(
         title: const Text("Loja"),
@@ -90,7 +91,7 @@ class _MarketplacePageState extends State<MarketplacePage> {
                     children: [
                       Text(
                         _error!,
-                        style: const TextStyle(color: Colors.white70),
+                        style: TextStyle(color: cs.onSurfaceVariant),
                       ),
                       const SizedBox(height: 16),
                       FilledButton(
@@ -102,12 +103,12 @@ class _MarketplacePageState extends State<MarketplacePage> {
                 : _products.isEmpty
                     ? ListView(
                         physics: const AlwaysScrollableScrollPhysics(),
-                        children: const [
-                          SizedBox(height: 120),
+                        children: [
+                          const SizedBox(height: 120),
                           Center(
                             child: Text(
                               "Nenhum produto disponível no momento.",
-                              style: TextStyle(color: Colors.white54),
+                              style: TextStyle(color: cs.onSurfaceVariant),
                             ),
                           ),
                         ],
@@ -128,7 +129,7 @@ class _MarketplacePageState extends State<MarketplacePage> {
                           final price = MarketplaceService.formatPrice(p["price"]);
                           final img = MarketplaceService.productPrimaryImageUrl(p);
                           return Material(
-                            color: const Color(0xFF1E1E1E),
+                            color: cs.surfaceContainerHigh,
                             borderRadius: BorderRadius.circular(14),
                             child: InkWell(
                               borderRadius: BorderRadius.circular(14),
@@ -162,19 +163,21 @@ class _MarketplacePageState extends State<MarketplacePage> {
                                                 ),
                                               ),
                                               errorWidget: (_, _, _) =>
-                                                  const ColoredBox(
-                                                color: Color(0xFF2A2A2A),
+                                                  ColoredBox(
+                                                color: cs.surfaceContainerHighest,
                                                 child: Icon(
                                                   Icons.image_not_supported,
-                                                  color: Colors.white24,
+                                                  color: cs.onSurfaceVariant
+                                                      .withValues(alpha: 0.45),
                                                 ),
                                               ),
                                             )
-                                          : const ColoredBox(
-                                              color: Color(0xFF2A2A2A),
+                                          : ColoredBox(
+                                              color: cs.surfaceContainerHighest,
                                               child: Icon(
                                                 Icons.inventory_2_outlined,
-                                                color: Colors.white24,
+                                                color: cs.onSurfaceVariant
+                                                    .withValues(alpha: 0.45),
                                                 size: 40,
                                               ),
                                             ),
@@ -195,16 +198,17 @@ class _MarketplacePageState extends State<MarketplacePage> {
                                           name,
                                           maxLines: 2,
                                           overflow: TextOverflow.ellipsis,
-                                          style: const TextStyle(
+                                          style: TextStyle(
                                             fontWeight: FontWeight.w600,
                                             fontSize: 13,
+                                            color: cs.onSurface,
                                           ),
                                         ),
                                         const SizedBox(height: 4),
                                         Text(
                                           "R\$ $price",
-                                          style: const TextStyle(
-                                            color: Color(0xFFE53935),
+                                          style: TextStyle(
+                                            color: cs.primary,
                                             fontWeight: FontWeight.bold,
                                           ),
                                         ),

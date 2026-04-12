@@ -31,7 +31,7 @@ Future<void> registerStudentAttendance({
           onPressed: () => Navigator.pop(ctx, false),
           child: const Text('Cancelar'),
         ),
-        ElevatedButton(
+        FilledButton(
           onPressed: () => Navigator.pop(ctx, true),
           child: const Text('Confirmar'),
         ),

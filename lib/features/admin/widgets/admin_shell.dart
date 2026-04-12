@@ -1,33 +1,60 @@
 import 'package:flutter/material.dart';
 
+import '../../../shared/themes/app_button_styles.dart';
+
 /// Visual e blocos reutilizáveis do painel admin (academia / plataforma).
+/// Preferir sempre [Theme.of(context).colorScheme] nas telas.
 abstract final class AdminPanelStyle {
-  static const Color accent = Color(0xFFE53935);
-  static const Color cardBg = Color(0xFF1A1A1A);
-  static const Color cardBgElevated = Color(0xFF1E1E1E);
+  static BoxDecoration cardDecoration(BuildContext context, {Color? border}) {
+    final cs = Theme.of(context).colorScheme;
+    return BoxDecoration(
+      color: cs.surface,
+      borderRadius: BorderRadius.circular(12),
+      border: Border.all(
+        color: border ??
+            cs.outline.withValues(
+              alpha: Theme.of(context).brightness == Brightness.dark
+                  ? 0.35
+                  : 0.2,
+            ),
+      ),
+    );
+  }
 
-  static BoxDecoration cardDecoration({Color? border}) => BoxDecoration(
-        color: cardBg,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: border ?? Colors.white.withValues(alpha: 0.08),
-        ),
-      );
-
-  static BoxDecoration heroGradientDecoration({Color? accentOverride}) {
-    final a = accentOverride ?? accent;
+  static BoxDecoration heroGradientDecoration(
+    BuildContext context, {
+    Color? accentOverride,
+  }) {
+    final cs = Theme.of(context).colorScheme;
+    final a = accentOverride ?? cs.primary;
     return BoxDecoration(
       borderRadius: BorderRadius.circular(16),
-      border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+      border: Border.all(color: a.withValues(alpha: 0.2)),
       gradient: LinearGradient(
         colors: [
-          a.withValues(alpha: 0.22),
+          a.withValues(alpha: 0.12),
           Colors.transparent,
         ],
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
       ),
     );
+  }
+
+  /// [FilledButton] / [FilledButton.icon] — mesmo acento vermelho do app (ou [background] custom).
+  static ButtonStyle filledPrimary(BuildContext context, {Color? background}) {
+    final cs = Theme.of(context).colorScheme;
+    if (background != null) {
+      return AppButtonStyles.primaryFilled(cs, background);
+    }
+    return AppButtonStyles.tertiaryAccentFilled(cs);
+  }
+
+  /// [OutlinedButton] alinhado ao design system.
+  static ButtonStyle outlinedAccent(BuildContext context, {Color? primary}) {
+    final cs = Theme.of(context).colorScheme;
+    final p = primary ?? cs.primary;
+    return AppButtonStyles.secondaryOutlined(cs, p);
   }
 }
 
@@ -52,7 +79,10 @@ class AdminHeroIntro extends StatelessWidget {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
-      decoration: AdminPanelStyle.heroGradientDecoration(accentOverride: cs.primary),
+      decoration: AdminPanelStyle.heroGradientDecoration(
+        context,
+        accentOverride: cs.primary,
+      ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -71,17 +101,18 @@ class AdminHeroIntro extends StatelessWidget {
               children: [
                 Text(
                   title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w800,
                     letterSpacing: -0.3,
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   subtitle,
                   style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.62),
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                     fontSize: 13,
                     height: 1.35,
                   ),
@@ -113,13 +144,17 @@ class AdminEmptyHint extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 16),
       child: Column(
         children: [
-          Icon(icon, size: 44, color: Colors.white.withValues(alpha: 0.22)),
+          Icon(
+            icon,
+            size: 44,
+            color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.45),
+          ),
           const SizedBox(height: 12),
           Text(
             message,
             textAlign: TextAlign.center,
             style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.5),
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
               fontSize: 14,
               height: 1.4,
             ),
@@ -136,15 +171,18 @@ class AdminErrorPanel extends StatelessWidget {
     super.key,
     required this.message,
     required this.onRetry,
-    this.accent = AdminPanelStyle.accent,
+    this.buttonColor,
   });
 
   final String message;
   final VoidCallback onRetry;
-  final Color accent;
+  /// Cor do botão de retry; padrão: [ColorScheme.primary] (monocromático).
+  final Color? buttonColor;
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final fill = buttonColor ?? cs.primary;
     return Center(
       child: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
@@ -154,20 +192,23 @@ class AdminErrorPanel extends StatelessWidget {
             Icon(
               Icons.cloud_off_outlined,
               size: 52,
-              color: Colors.white.withValues(alpha: 0.35),
+              color: cs.onSurfaceVariant.withValues(alpha: 0.6),
             ),
             const SizedBox(height: 16),
             Text(
               message.replaceFirst("Exception: ", ""),
               textAlign: TextAlign.center,
-              style: const TextStyle(color: Colors.white70, height: 1.45),
+              style: TextStyle(
+                color: cs.onSurface.withValues(alpha: 0.75),
+                height: 1.45,
+              ),
             ),
             const SizedBox(height: 22),
             FilledButton.icon(
               onPressed: onRetry,
               icon: const Icon(Icons.refresh),
               label: const Text("Tentar novamente"),
-              style: FilledButton.styleFrom(backgroundColor: accent),
+              style: AppButtonStyles.primaryFilled(cs, fill),
             ),
           ],
         ),
@@ -207,7 +248,7 @@ class AdminAccessDeniedBody extends StatelessWidget {
               "Se precisar de permissão, fale com o responsável.",
               textAlign: TextAlign.center,
               style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.6),
+                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.65),
                 fontSize: 14,
                 height: 1.45,
               ),

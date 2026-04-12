@@ -68,7 +68,12 @@ class BrandingColorRow extends StatelessWidget {
                               decoration: BoxDecoration(
                                 color: c,
                                 shape: BoxShape.circle,
-                                border: Border.all(color: Colors.white24),
+                                border: Border.all(
+                                  color: Theme.of(ctx)
+                                      .colorScheme
+                                      .outline
+                                      .withValues(alpha: 0.45),
+                                ),
                               ),
                             ),
                           ),
@@ -103,6 +108,7 @@ class BrandingColorRow extends StatelessWidget {
     return ListenableBuilder(
       listenable: controller,
       builder: (context, _) {
+        final cs = Theme.of(context).colorScheme;
         final preview = parseHexColor(controller.text.trim()) ?? fallbackColor;
         final hasCustom = controller.text.trim().isNotEmpty;
 
@@ -111,16 +117,17 @@ class BrandingColorRow extends StatelessWidget {
           children: [
             Text(
               label,
-              style: const TextStyle(
+              style: TextStyle(
                 fontWeight: FontWeight.w600,
                 fontSize: 14,
+                color: cs.onSurface,
               ),
             ),
             const SizedBox(height: 4),
             Text(
               helper,
               style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.55),
+                color: cs.onSurfaceVariant,
                 fontSize: 12,
               ),
             ),
@@ -133,7 +140,9 @@ class BrandingColorRow extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: preview,
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.white24),
+                    border: Border.all(
+                      color: cs.outline.withValues(alpha: 0.35),
+                    ),
                     boxShadow: [
                       BoxShadow(
                         color: preview.withValues(alpha: 0.35),

@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 
+import '../../../shared/themes/app_tokens.dart';
 import '../services/admin_service.dart';
 import '../widgets/admin_shell.dart';
 import '../../membership/services/membership_service.dart';
-
-const _kAccent = AdminPanelStyle.accent;
 
 int? _coerceId(dynamic v) {
   if (v == null) return null;
@@ -305,8 +304,11 @@ class _AdminPlansTabState extends State<AdminPlansTab> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final accent = cs.tertiary;
+
     if (_loading) {
-      return const Center(child: CircularProgressIndicator(color: _kAccent));
+      return Center(child: CircularProgressIndicator(color: accent));
     }
     if (_error != null) {
       return Center(
@@ -319,7 +321,6 @@ class _AdminPlansTabState extends State<AdminPlansTab> {
               const SizedBox(height: 16),
               FilledButton(
                 onPressed: _load,
-                style: FilledButton.styleFrom(backgroundColor: _kAccent),
                 child: const Text("Tentar novamente"),
               ),
             ],
@@ -331,7 +332,7 @@ class _AdminPlansTabState extends State<AdminPlansTab> {
     return Stack(
       children: [
         RefreshIndicator(
-          color: _kAccent,
+          color: accent,
           onRefresh: _load,
           child: ListView(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 88),
@@ -352,7 +353,7 @@ class _AdminPlansTabState extends State<AdminPlansTab> {
                       setState(() => _activeOnly = v);
                       _load();
                     },
-                    selectedColor: _kAccent.withValues(alpha: 0.35),
+                    selectedColor: accent.withValues(alpha: 0.22),
                   ),
                   const Spacer(),
                   TextButton.icon(
@@ -369,9 +370,13 @@ class _AdminPlansTabState extends State<AdminPlansTab> {
                 label: const Text("Nova assinatura (aluno + plano)"),
               ),
               const SizedBox(height: 20),
-              const Text(
+              Text(
                 "Planos cadastrados",
-                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 15,
+                  color: cs.onSurface,
+                ),
               ),
               const SizedBox(height: 10),
               if (_plans.isEmpty)
@@ -391,9 +396,11 @@ class _AdminPlansTabState extends State<AdminPlansTab> {
                     child: Container(
                       padding: const EdgeInsets.all(14),
                       decoration: BoxDecoration(
-                        color: AdminPanelStyle.cardBg,
+                        color: cs.surface,
                         borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: Colors.white10),
+                        border: Border.all(
+                          color: cs.outline.withValues(alpha: 0.12),
+                        ),
                       ),
                       child: Row(
                         children: [
@@ -403,16 +410,17 @@ class _AdminPlansTabState extends State<AdminPlansTab> {
                               children: [
                                 Text(
                                   name,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontWeight: FontWeight.w600,
                                     fontSize: 15,
+                                    color: cs.onSurface,
                                   ),
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
                                   "$priceLine · $days dias",
-                                  style: const TextStyle(
-                                    color: Colors.white54,
+                                  style: TextStyle(
+                                    color: cs.onSurfaceVariant,
                                     fontSize: 13,
                                   ),
                                 ),
@@ -426,15 +434,18 @@ class _AdminPlansTabState extends State<AdminPlansTab> {
                             ),
                             decoration: BoxDecoration(
                               color: active
-                                  ? Colors.green.withValues(alpha: 0.2)
-                                  : Colors.white12,
+                                  ? AppColors.success.withValues(alpha: 0.15)
+                                  : cs.onSurfaceVariant.withValues(alpha: 0.12),
                               borderRadius: BorderRadius.circular(20),
                             ),
                             child: Text(
                               active ? "Ativo" : "Inativo",
                               style: TextStyle(
                                 fontSize: 11,
-                                color: active ? Colors.lightGreenAccent : Colors.white54,
+                                fontWeight: FontWeight.w700,
+                                color: active
+                                    ? AppColors.success
+                                    : cs.onSurfaceVariant,
                               ),
                             ),
                           ),
@@ -451,7 +462,6 @@ class _AdminPlansTabState extends State<AdminPlansTab> {
           bottom: 16,
           child: FloatingActionButton(
             onPressed: _createPlan,
-            backgroundColor: _kAccent,
             child: const Icon(Icons.add),
           ),
         ),

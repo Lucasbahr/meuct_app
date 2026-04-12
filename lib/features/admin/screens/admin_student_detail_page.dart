@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import '../../../core/graduacao/bjj_graduacao.dart';
+import '../../../shared/themes/app_button_styles.dart';
 import '../services/admin_service.dart';
 import '../widgets/register_student_attendance.dart';
 import '../../../widgets/loading_overlay.dart';
@@ -58,6 +59,7 @@ class _AdminStudentDetailPageState extends State<AdminStudentDetailPage> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     final eAtleta = (widget.student['e_atleta'] ?? false) == true;
     final nome = _t('nome');
     return Scaffold(
@@ -94,14 +96,17 @@ class _AdminStudentDetailPageState extends State<AdminStudentDetailPage> {
               children: [
                 CircleAvatar(
                   radius: 56,
-                  backgroundColor: const Color(0xFF2A2A2A),
+                  backgroundColor: cs.surfaceContainerHighest,
                   backgroundImage:
                       _photoBytes != null ? MemoryImage(_photoBytes!) : null,
                   child: _loadingPhoto
-                      ? const SizedBox(
+                      ? SizedBox(
                           width: 32,
                           height: 32,
-                          child: CircularProgressIndicator(strokeWidth: 2),
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: cs.tertiary,
+                          ),
                         )
                       : _photoBytes == null
                           ? const Icon(Icons.person, size: 56)
@@ -122,7 +127,7 @@ class _AdminStudentDetailPageState extends State<AdminStudentDetailPage> {
           const SizedBox(height: 16),
           SizedBox(
             width: double.infinity,
-            child: ElevatedButton.icon(
+            child: FilledButton.icon(
               onPressed: () => registerStudentAttendance(
                 context: context,
                 service: widget.service,
@@ -133,8 +138,14 @@ class _AdminStudentDetailPageState extends State<AdminStudentDetailPage> {
               ),
               icon: const Icon(Icons.how_to_reg_outlined),
               label: const Text('Registrar presença (hoje)'),
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 14),
+              style: AppButtonStyles.tertiaryAccentFilled(
+                Theme.of(context).colorScheme,
+              ).merge(
+                const ButtonStyle(
+                  padding: WidgetStatePropertyAll(
+                    EdgeInsets.symmetric(vertical: 14),
+                  ),
+                ),
               ),
             ),
           ),
@@ -142,24 +153,25 @@ class _AdminStudentDetailPageState extends State<AdminStudentDetailPage> {
           Text(
             'Para alunos sem celular ou sem app: o professor registra a presença aqui.',
             style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.55),
+              color: cs.onSurfaceVariant,
               fontSize: 12,
             ),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 20),
-          _card('Email', _t('email')),
-          _card('Telefone', _t('telefone')),
-          _card('Modalidade', _t('modalidade')),
+          _card(context, 'Email', _t('email')),
+          _card(context, 'Telefone', _t('telefone')),
+          _card(context, 'Modalidade', _t('modalidade')),
           _card(
+            context,
             'Graduação',
             formatGraduacaoDisplay(
               (widget.student['graduacao'] ?? '').toString(),
             ),
           ),
-          _card('Status', _t('status')),
-          _card('Endereço', _t('endereco')),
-          _card('Data de nascimento', _t('data_nascimento')),
+          _card(context, 'Status', _t('status')),
+          _card(context, 'Endereço', _t('endereco')),
+          _card(context, 'Data de nascimento', _t('data_nascimento')),
           if (eAtleta) ...[
             const SizedBox(height: 8),
             SizedBox(
@@ -185,25 +197,35 @@ class _AdminStudentDetailPageState extends State<AdminStudentDetailPage> {
     );
   }
 
-  Widget _card(String label, String value) {
+  Widget _card(BuildContext context, String label, String value) {
+    final cs = Theme.of(context).colorScheme;
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: const Color(0xFF1E1E1E),
+        color: cs.surfaceContainerHigh,
         borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: cs.outline.withValues(alpha: 0.22),
+        ),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
             width: 120,
-            child: Text(label, style: const TextStyle(color: Colors.white70)),
+            child: Text(
+              label,
+              style: TextStyle(color: cs.onSurfaceVariant),
+            ),
           ),
           Expanded(
             child: Text(
               value.isEmpty ? '-' : value,
-              style: const TextStyle(fontWeight: FontWeight.w600),
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+                color: cs.onSurface,
+              ),
             ),
           ),
         ],

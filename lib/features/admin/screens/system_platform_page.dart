@@ -131,7 +131,7 @@ class _SystemPlatformPageState extends State<SystemPlatformPage> {
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text("Cancelar")),
           FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: AdminPanelStyle.accent),
+            style: AdminPanelStyle.filledPrimary(ctx),
             onPressed: () => Navigator.pop(ctx, true),
             child: const Text("Criar"),
           ),
@@ -172,7 +172,7 @@ class _SystemPlatformPageState extends State<SystemPlatformPage> {
             actions: [
               TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text("Depois")),
               FilledButton(
-                style: FilledButton.styleFrom(backgroundColor: AdminPanelStyle.accent),
+                style: AdminPanelStyle.filledPrimary(ctx),
                 onPressed: () => Navigator.pop(ctx, true),
                 child: const Text("Sim, usar agora"),
               ),
@@ -217,7 +217,10 @@ class _SystemPlatformPageState extends State<SystemPlatformPage> {
               children: [
                 Text(
                   "${_gymName ?? "Academia ativa"} — conta já verificada; pode logar na hora.",
-                  style: TextStyle(fontSize: 12, color: Colors.white.withValues(alpha: 0.6)),
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Theme.of(ctx).colorScheme.onSurfaceVariant,
+                  ),
                 ),
                 const SizedBox(height: 12),
                 TextField(
@@ -248,7 +251,7 @@ class _SystemPlatformPageState extends State<SystemPlatformPage> {
           actions: [
             TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text("Cancelar")),
             FilledButton(
-              style: FilledButton.styleFrom(backgroundColor: AdminPanelStyle.accent),
+              style: AdminPanelStyle.filledPrimary(ctx),
               onPressed: () => Navigator.pop(ctx, true),
               child: const Text("Criar"),
             ),
@@ -282,8 +285,12 @@ class _SystemPlatformPageState extends State<SystemPlatformPage> {
   @override
   Widget build(BuildContext context) {
     if (_loadingGate) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator(color: AdminPanelStyle.accent)),
+      return Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(
+            color: Theme.of(context).colorScheme.tertiary,
+          ),
+        ),
       );
     }
     if (!_allowed) {
@@ -292,6 +299,8 @@ class _SystemPlatformPageState extends State<SystemPlatformPage> {
         body: const AdminAccessDeniedBody(),
       );
     }
+
+    final cs = Theme.of(context).colorScheme;
 
     return Scaffold(
       appBar: AppBar(
@@ -332,22 +341,29 @@ class _SystemPlatformPageState extends State<SystemPlatformPage> {
           ),
           const SizedBox(height: 12),
           Card(
-            color: AdminPanelStyle.cardBgElevated,
+            color: cs.surfaceContainerHigh,
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     "Contexto da API",
-                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+                    style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 15,
+                      color: cs.onSurface,
+                    ),
                   ),
                   const SizedBox(height: 8),
                   SelectableText(
                     _gymId == null
                         ? "Nenhuma academia selecionada — escolha uma para enviar X-Gym-Id nas chamadas."
                         : (_gymName ?? "Academia"),
-                    style: TextStyle(color: Colors.white.withValues(alpha: 0.85), fontSize: 13),
+                    style: TextStyle(
+                      color: cs.onSurface.withValues(alpha: 0.9),
+                      fontSize: 13,
+                    ),
                   ),
                   const SizedBox(height: 12),
                   OutlinedButton.icon(
@@ -361,24 +377,31 @@ class _SystemPlatformPageState extends State<SystemPlatformPage> {
           ),
           const SizedBox(height: 12),
           Card(
-            color: AdminPanelStyle.cardBgElevated,
+            color: cs.surfaceContainerHigh,
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const Text(
+                  Text(
                     "Nova academia",
-                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+                    style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 15,
+                      color: cs.onSurface,
+                    ),
                   ),
                   const SizedBox(height: 6),
                   Text(
                     "Cria tenant no servidor (POST /tenants).",
-                    style: TextStyle(fontSize: 12, color: Colors.white.withValues(alpha: 0.55)),
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: cs.onSurfaceVariant,
+                    ),
                   ),
                   const SizedBox(height: 12),
                   FilledButton.icon(
-                    style: FilledButton.styleFrom(backgroundColor: AdminPanelStyle.accent),
+                    style: AdminPanelStyle.filledPrimary(context),
                     onPressed: _createTenant,
                     icon: const Icon(Icons.add_business),
                     label: const Text("Cadastrar nova academia"),
@@ -389,24 +412,31 @@ class _SystemPlatformPageState extends State<SystemPlatformPage> {
           ),
           const SizedBox(height: 12),
           Card(
-            color: AdminPanelStyle.cardBgElevated,
+            color: cs.surfaceContainerHigh,
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const Text(
+                  Text(
                     "Delegar acesso",
-                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+                    style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 15,
+                      color: cs.onSurface,
+                    ),
                   ),
                   const SizedBox(height: 6),
                   Text(
                     "Cria login na academia ativa (admin, professor ou aluno), já liberado para entrar.",
-                    style: TextStyle(fontSize: 12, color: Colors.white.withValues(alpha: 0.55)),
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: cs.onSurfaceVariant,
+                    ),
                   ),
                   const SizedBox(height: 12),
                   FilledButton.icon(
-                    style: FilledButton.styleFrom(backgroundColor: AdminPanelStyle.accent),
+                    style: AdminPanelStyle.filledPrimary(context),
                     onPressed: _provisionUser,
                     icon: const Icon(Icons.person_add),
                     label: const Text("Criar usuário na academia ativa"),
