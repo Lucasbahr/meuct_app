@@ -1,11 +1,34 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../core/graduacao/bjj_graduacao.dart';
+import '../../tenant/services/tenant_service.dart';
 
-class AdminAthleteDetailPage extends StatelessWidget {
+class AdminAthleteDetailPage extends StatefulWidget {
   final Map<String, dynamic> athlete;
 
   const AdminAthleteDetailPage({super.key, required this.athlete});
+
+  @override
+  State<AdminAthleteDetailPage> createState() => _AdminAthleteDetailPageState();
+}
+
+class _AdminAthleteDetailPageState extends State<AdminAthleteDetailPage> {
+  String _academyLine = 'Academia';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadAcademyName();
+  }
+
+  Future<void> _loadAcademyName() async {
+    try {
+      final cfg = await TenantService().getTenantConfig();
+      final n = TenantService.displayNameFromConfig(cfg)?.trim();
+      if (!mounted) return;
+      if (n != null && n.isNotEmpty) setState(() => _academyLine = n);
+    } catch (_) {}
+  }
 
   DateTime? _parseBirthDate(dynamic raw) {
     if (raw is! String || raw.trim().isEmpty) return null;
@@ -31,39 +54,42 @@ class AdminAthleteDetailPage extends StatelessWidget {
   }
 
   String _buildCopyText() {
+    final a = widget.athlete;
     final birth = _parseBirthDate(
-      athlete["data_nascimento"] ?? athlete["nascimento"] ?? athlete["birth_date"],
+      a["data_nascimento"] ?? a["nascimento"] ?? a["birth_date"],
     );
     final age = _calcAge(birth);
+    final header = _academyLine.toUpperCase();
     return '''
-*DADOS DO ATLETA - GENESIS MMA*
+*DADOS DO ATLETA - $header*
 
-Nome: ${athlete["nome"] ?? "-"}
+Nome: ${a["nome"] ?? "-"}
 Data de nascimento: ${_formatDate(birth)}
 Idade: ${age?.toString() ?? "-"} anos
-Modalidade: ${athlete["modalidade"] ?? "-"}
-Graduacao: ${formatGraduacaoDisplay((athlete["graduacao"] ?? "").toString())}
-Cartel MMA: ${athlete["cartel_mma"] ?? "-"}
-Cartel Jiu: ${athlete["cartel_jiu"] ?? "-"}
-Cartel K1: ${athlete["cartel_k1"] ?? "-"}
-Nivel competicao: ${athlete["nivel_competicao"] ?? "-"}
-Tapology: ${athlete["link_tapology"] ?? "-"}
-Ultima luta: ${athlete["ultima_luta_em"] ?? "-"} (${athlete["ultima_luta_modalidade"] ?? "-"})
+Modalidade: ${a["modalidade"] ?? "-"}
+Graduacao: ${formatGraduacaoDisplay((a["graduacao"] ?? "").toString())}
+Cartel MMA: ${a["cartel_mma"] ?? "-"}
+Cartel Jiu: ${a["cartel_jiu"] ?? "-"}
+Cartel K1: ${a["cartel_k1"] ?? "-"}
+Nivel competicao: ${a["nivel_competicao"] ?? "-"}
+Tapology: ${a["link_tapology"] ?? "-"}
+Ultima luta: ${a["ultima_luta_em"] ?? "-"} (${a["ultima_luta_modalidade"] ?? "-"})
 ''';
   }
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final a = widget.athlete;
     final birth = _parseBirthDate(
-      athlete["data_nascimento"] ?? athlete["nascimento"] ?? athlete["birth_date"],
+      a["data_nascimento"] ?? a["nascimento"] ?? a["birth_date"],
     );
     final age = _calcAge(birth);
     final copyText = _buildCopyText();
 
     return Scaffold(
       appBar: AppBar(
-        title: Text((athlete["nome"] ?? "Atleta").toString()),
+        title: Text((a["nome"] ?? "Atleta").toString()),
         actions: [
           IconButton(
             onPressed: () async {
@@ -123,13 +149,13 @@ Ultima luta: ${athlete["ultima_luta_em"] ?? "-"} (${athlete["ultima_luta_modalid
             ),
           ),
           const SizedBox(height: 12),
-          _item(context, "Nome", (athlete["nome"] ?? "-").toString()),
-          _item(context, "Endereco", (athlete["endereco"] ?? "-").toString()),
-          _item(context, "Modalidade", (athlete["modalidade"] ?? "-").toString()),
+          _item(context, "Nome", (a["nome"] ?? "-").toString()),
+          _item(context, "Endereco", (a["endereco"] ?? "-").toString()),
+          _item(context, "Modalidade", (a["modalidade"] ?? "-").toString()),
           _item(
             context,
             "Graduacao",
-            formatGraduacaoDisplay((athlete["graduacao"] ?? "").toString()),
+            formatGraduacaoDisplay((a["graduacao"] ?? "").toString()),
           ),
           _item(
             context,
@@ -137,19 +163,19 @@ Ultima luta: ${athlete["ultima_luta_em"] ?? "-"} (${athlete["ultima_luta_modalid
             _formatDate(birth),
           ),
           _item(context, "Idade", age?.toString() ?? "-"),
-          _item(context, "Cartel MMA", (athlete["cartel_mma"] ?? "-").toString()),
-          _item(context, "Cartel Jiu", (athlete["cartel_jiu"] ?? "-").toString()),
-          _item(context, "Cartel K1", (athlete["cartel_k1"] ?? "-").toString()),
+          _item(context, "Cartel MMA", (a["cartel_mma"] ?? "-").toString()),
+          _item(context, "Cartel Jiu", (a["cartel_jiu"] ?? "-").toString()),
+          _item(context, "Cartel K1", (a["cartel_k1"] ?? "-").toString()),
           _item(
             context,
             "Nivel competicao",
-            (athlete["nivel_competicao"] ?? "-").toString(),
+            (a["nivel_competicao"] ?? "-").toString(),
           ),
-          _item(context, "Tapology", (athlete["link_tapology"] ?? "-").toString()),
+          _item(context, "Tapology", (a["link_tapology"] ?? "-").toString()),
           _item(
             context,
             "Ultima luta",
-            "${athlete["ultima_luta_em"] ?? "-"} (${athlete["ultima_luta_modalidade"] ?? "-"})",
+            "${a["ultima_luta_em"] ?? "-"} (${a["ultima_luta_modalidade"] ?? "-"})",
           ),
         ],
       ),
@@ -180,7 +206,6 @@ Ultima luta: ${athlete["ultima_luta_em"] ?? "-"} (${athlete["ultima_luta_modalid
           Expanded(
             child: Text(
               value,
-              textAlign: TextAlign.right,
               style: TextStyle(
                 fontWeight: FontWeight.w600,
                 color: cs.onSurface,
@@ -192,4 +217,3 @@ Ultima luta: ${athlete["ultima_luta_em"] ?? "-"} (${athlete["ultima_luta_modalid
     );
   }
 }
-

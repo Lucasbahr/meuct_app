@@ -257,18 +257,7 @@ class _HomePageState extends State<HomePage> {
   Future<void> _loadTenantDisplayName() async {
     try {
       final cfg = await TenantService().getTenantConfig();
-      String? name;
-      final tenant = cfg['tenant'];
-      if (tenant is Map) {
-        final t = Map<String, dynamic>.from(tenant);
-        final n = t['nome'] ?? t['name'] ?? t['display_name'];
-        if (n is String && n.trim().isNotEmpty) name = n.trim();
-      }
-      for (final k in ['gym_name', 'nome', 'name', 'tenant_name', 'academy_name']) {
-        if (name != null) break;
-        final v = cfg[k];
-        if (v is String && v.trim().isNotEmpty) name = v.trim();
-      }
+      final name = TenantService.displayNameFromConfig(cfg);
       if (!mounted) return;
       setState(() => _tenantDisplayName = name);
     } catch (_) {
